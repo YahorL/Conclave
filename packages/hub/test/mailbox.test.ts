@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { openDb } from "../src/db.js";
 import { Mailbox } from "../src/mailbox.js";
+import type { Message } from "@conclave/shared";
+import { ThreadClosedError, ThreadNotFoundError } from "../src/mailbox.js";
 
 function freshMailbox(): Mailbox {
   const dir = mkdtempSync(join(tmpdir(), "conclave-test-"));
@@ -45,5 +47,63 @@ describe("Mailbox threads", () => {
     const thread = first.createThread({ kind: "task", participants: ["deploy"], workspace: "ws1" });
     const second = new Mailbox(openDb(path));
     expect(second.getThread(thread.id)).toEqual(thread);
+  });
+});
+
+describe("Mailbox messages", () => {
+  let mailbox: Mailbox;
+  beforeEach(() => {
+    mailbox = freshMailbox();
+  });
+
+  it("appends and lists messages with monotonic ids", () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you", "codex"] });
+    const m1 = mailbox.appendMessage(t.id, {
+      from: "you", to: ["codex"], type: "text", body: "first", artifacts: [],
+    });
+    const m2 = mailbox.appendMessage(t.id, {
+      from: "codex", to: ["you"], type: "text", body: "second", artifacts: [],
+    });
+    expect(m2.id).toBeGreaterThan(m1.id);
+    expect(mailbox.listMessages(t.id).map((m) => m.body)).toEqual(["first", "second"]);
+  });
+
+  it("supports catch-up via afterId", () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    const m1 = mailbox.appendMessage(t.id, {
+      from: "you", to: [], type: "text", body: "old", artifacts: [],
+    });
+    mailbox.appendMessage(t.id, {
+      from: "you", to: [], type: "text", body: "new", artifacts: [],
+    });
+    const caughtUp = mailbox.listMessages(t.id, m1.id);
+    expect(caughtUp.map((m) => m.body)).toEqual(["new"]);
+  });
+
+  it("emits a message event on append", () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    const seen: Message[] = [];
+    mailbox.events.on("message", (m: Message) => seen.push(m));
+    mailbox.appendMessage(t.id, {
+      from: "you", to: [], type: "text", body: "ping", artifacts: [],
+    });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.body).toBe("ping");
+  });
+
+  it("rejects messages to unknown or closed threads", () => {
+    expect(() =>
+      mailbox.appendMessage("nope", {
+        from: "you", to: [], type: "text", body: "x", artifacts: [],
+      }),
+    ).toThrow(ThreadNotFoundError);
+
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    mailbox.closeThread(t.id);
+    expect(() =>
+      mailbox.appendMessage(t.id, {
+        from: "you", to: [], type: "text", body: "x", artifacts: [],
+      }),
+    ).toThrow(ThreadClosedError);
   });
 });

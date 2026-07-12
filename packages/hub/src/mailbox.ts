@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import type Database from "better-sqlite3";
-import type { NewThread, Thread } from "@conclave/shared";
+import type { Message, NewMessage, NewThread, Thread } from "@conclave/shared";
 
 export class ThreadNotFoundError extends Error {
   constructor(id: string) {
@@ -29,6 +29,17 @@ interface ThreadRow {
   state: string;
   verdicts: string;
   created_at: string;
+}
+
+interface MessageRow {
+  id: number;
+  thread_id: string;
+  sender: string;
+  recipients: string;
+  type: string;
+  body: string;
+  artifacts: string;
+  ts: string;
 }
 
 export class Mailbox {
@@ -76,6 +87,58 @@ export class Mailbox {
       .all() as ThreadRow[];
     return rows.map(rowToThread);
   }
+
+  appendMessage(threadId: string, input: NewMessage): Message {
+    const thread = this.requireOpenThread(threadId);
+    const ts = new Date().toISOString();
+    const info = this.db
+      .prepare(
+        `INSERT INTO messages (thread_id, sender, recipients, type, body, artifacts, ts)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        thread.id,
+        input.from,
+        JSON.stringify(input.to),
+        input.type,
+        input.body,
+        JSON.stringify(input.artifacts),
+        ts,
+      );
+    const message: Message = {
+      id: Number(info.lastInsertRowid),
+      threadId: thread.id,
+      from: input.from,
+      to: input.to,
+      type: input.type,
+      body: input.body,
+      artifacts: input.artifacts,
+      ts,
+    };
+    this.events.emit("message", message);
+    return message;
+  }
+
+  listMessages(threadId: string, afterId = 0): Message[] {
+    const rows = this.db
+      .prepare("SELECT * FROM messages WHERE thread_id = ? AND id > ? ORDER BY id ASC")
+      .all(threadId, afterId) as MessageRow[];
+    return rows.map(rowToMessage);
+  }
+
+  closeThread(threadId: string): Thread {
+    const thread = this.getThread(threadId);
+    if (!thread) throw new ThreadNotFoundError(threadId);
+    this.db.prepare("UPDATE threads SET state = 'closed' WHERE id = ?").run(threadId);
+    return { ...thread, state: "closed" };
+  }
+
+  private requireOpenThread(threadId: string): Thread {
+    const thread = this.getThread(threadId);
+    if (!thread) throw new ThreadNotFoundError(threadId);
+    if (thread.state === "closed") throw new ThreadClosedError(threadId);
+    return thread;
+  }
 }
 
 function rowToThread(row: ThreadRow): Thread {
@@ -87,5 +150,18 @@ function rowToThread(row: ThreadRow): Thread {
     state: row.state as Thread["state"],
     verdicts: JSON.parse(row.verdicts) as Record<string, string>,
     createdAt: row.created_at,
+  };
+}
+
+function rowToMessage(row: MessageRow): Message {
+  return {
+    id: row.id,
+    threadId: row.thread_id,
+    from: row.sender,
+    to: JSON.parse(row.recipients) as string[],
+    type: row.type as Message["type"],
+    body: row.body,
+    artifacts: JSON.parse(row.artifacts) as string[],
+    ts: row.ts,
   };
 }
