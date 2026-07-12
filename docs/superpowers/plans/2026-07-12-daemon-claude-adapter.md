@@ -2003,3 +2003,126 @@ The real-claude smoke (README steps) costs subscription quota and needs the loca
 git add -A
 git commit -m "feat(daemon): runnable entrypoint and operator readme"
 ```
+
+---
+
+### Task 10: Step-1 carry-downs (thread-event wake, hub exports, envelope test gaps)
+
+These three items were deferred "to step 2" by the step-1 whole-branch review. They are independent of Tasks 2–9 but Task 10 runs last so the daemon tests exercise the improved long-poll.
+
+**Files:**
+- Modify: `packages/hub/src/server.ts` (waitForThreadMessage), `packages/hub/src/index.ts`
+- Test: `packages/hub/test/api.test.ts` (one test), `packages/shared/test/envelope.test.ts` (three tests)
+
+**Interfaces:**
+- Consumes: hub internals from step 1.
+- Produces: `GET .../messages?wait=S` also wakes early (returning the current, possibly empty, list) when the thread settles or closes mid-wait — so `wait_for_reply` never parks a full timeout on a dead thread. `packages/hub/src/index.ts` re-exports the public surface: `openDb`, `Mailbox` + error classes, `buildServer`, `loadRegistry`.
+
+- [ ] **Step 1: Write the failing hub test**
+
+Append to the "long-poll" describe in `packages/hub/test/api.test.ts`:
+```ts
+  it("wakes early when the thread settles or closes mid-wait", async () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    const started = Date.now();
+    const pending = app.inject({
+      method: "GET",
+      url: `/api/threads/${t.id}/messages?after=0&wait=10`,
+      headers: AUTH,
+    });
+    setTimeout(() => mailbox.closeThread(t.id), 100);
+    const res = await pending;
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(res.json<Message[]>()).toEqual([]);
+  });
+```
+
+- [ ] **Step 2: RED**
+
+Run: `npx pnpm vitest run packages/hub/test/api.test.ts`
+Expected: FAIL — the request parks the full 10s (test exceeds the 5s bound).
+
+- [ ] **Step 3: Implement the wake + exports**
+
+In `packages/hub/src/server.ts`, replace `waitForThreadMessage` with:
+```ts
+function waitForThreadMessage(
+  mailbox: Mailbox,
+  threadId: string,
+  timeoutMs: number,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(done, timeoutMs);
+    function onMessage(message: Message): void {
+      if (message.threadId === threadId) done();
+    }
+    function onThread(thread: Thread): void {
+      if (thread.id === threadId && (thread.state === "settled" || thread.state === "closed")) {
+        done();
+      }
+    }
+    function done(): void {
+      clearTimeout(timer);
+      mailbox.events.off("message", onMessage);
+      mailbox.events.off("thread", onThread);
+      resolve();
+    }
+    mailbox.events.on("message", onMessage);
+    mailbox.events.on("thread", onThread);
+  });
+}
+```
+(`Thread` is already imported as a type in server.ts from Task 8 of step 1; if not, add it to the shared type import.)
+
+Replace `packages/hub/src/index.ts` (currently `export {};`) with:
+```ts
+export { openDb } from "./db.js";
+export {
+  Mailbox,
+  NotAParticipantError,
+  ThreadClosedError,
+  ThreadNotFoundError,
+} from "./mailbox.js";
+export { buildServer, type ServerOptions } from "./server.js";
+export { loadRegistry } from "./registry.js";
+```
+
+- [ ] **Step 4: Write the failing shared tests, then GREEN**
+
+Append to the existing describes in `packages/shared/test/envelope.test.ts`:
+```ts
+  it("rejects an unknown kind", () => {
+    expect(
+      NewThreadSchema.safeParse({ kind: "party", participants: ["a"] }).success,
+    ).toBe(false);
+  });
+
+  it("rejects non-positive and non-integer message ids", () => {
+    const base = {
+      threadId: "t", from: "a", to: [], type: "text",
+      body: "x", artifacts: [], ts: new Date().toISOString(),
+    };
+    expect(MessageSchema.safeParse({ ...base, id: 0 }).success).toBe(false);
+    expect(MessageSchema.safeParse({ ...base, id: 1.5 }).success).toBe(false);
+  });
+
+  it("rejects empty participants on ThreadSchema too", () => {
+    expect(
+      ThreadSchema.safeParse({
+        id: "t", kind: "chat", workspace: null, participants: [],
+        state: "open", verdicts: {}, createdAt: new Date().toISOString(),
+      }).success,
+    ).toBe(false);
+  });
+```
+These should pass immediately (the schemas already enforce this — the gap was coverage). If any FAILS, stop and report: that's a real schema bug, not a coverage gap.
+
+Run: `npx pnpm test` — Expected: 70 tests total (12 shared + 32 hub + 26 daemon), all passing.
+Run: `npx pnpm typecheck` — Expected: clean.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add packages/hub packages/shared
+git commit -m "fix(hub): wake long-polls on thread settle/close; export hub surface; envelope test gaps"
+```
