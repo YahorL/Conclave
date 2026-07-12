@@ -126,11 +126,27 @@ export class Mailbox {
     return rows.map(rowToMessage);
   }
 
+  setVerdict(threadId: string, agent: string, verdict: string): Thread {
+    const thread = this.requireOpenThread(threadId);
+    if (!thread.participants.includes(agent)) throw new NotAParticipantError(agent);
+    const verdicts = { ...thread.verdicts, [agent]: verdict };
+    const settled = thread.participants.every((p) => verdicts[p] !== undefined);
+    const state: Thread["state"] = settled ? "settled" : thread.state;
+    this.db
+      .prepare("UPDATE threads SET verdicts = ?, state = ? WHERE id = ?")
+      .run(JSON.stringify(verdicts), state, threadId);
+    const updated: Thread = { ...thread, verdicts, state };
+    this.events.emit("thread", updated);
+    return updated;
+  }
+
   closeThread(threadId: string): Thread {
     const thread = this.getThread(threadId);
     if (!thread) throw new ThreadNotFoundError(threadId);
     this.db.prepare("UPDATE threads SET state = 'closed' WHERE id = ?").run(threadId);
-    return { ...thread, state: "closed" };
+    const updated: Thread = { ...thread, state: "closed" };
+    this.events.emit("thread", updated);
+    return updated;
   }
 
   private requireOpenThread(threadId: string): Thread {

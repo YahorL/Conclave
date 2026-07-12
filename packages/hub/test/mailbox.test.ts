@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { openDb } from "../src/db.js";
 import { Mailbox } from "../src/mailbox.js";
 import type { Message } from "@conclave/shared";
-import { ThreadClosedError, ThreadNotFoundError } from "../src/mailbox.js";
+import { ThreadClosedError, ThreadNotFoundError, NotAParticipantError } from "../src/mailbox.js";
+import type { Thread } from "@conclave/shared";
 
 function freshMailbox(): Mailbox {
   const dir = mkdtempSync(join(tmpdir(), "conclave-test-"));
@@ -105,5 +106,43 @@ describe("Mailbox messages", () => {
         from: "you", to: [], type: "text", body: "x", artifacts: [],
       }),
     ).toThrow(ThreadClosedError);
+  });
+});
+
+describe("Mailbox verdicts", () => {
+  let mailbox: Mailbox;
+  beforeEach(() => {
+    mailbox = freshMailbox();
+  });
+
+  it("stores verdicts and settles when all participants voted", () => {
+    const t = mailbox.createThread({ kind: "debate", participants: ["claude-code", "codex"] });
+    const afterFirst = mailbox.setVerdict(t.id, "claude-code", "approve");
+    expect(afterFirst.state).toBe("open");
+    const afterSecond = mailbox.setVerdict(t.id, "codex", "reject");
+    expect(afterSecond.state).toBe("settled");
+    expect(afterSecond.verdicts).toEqual({ "claude-code": "approve", codex: "reject" });
+  });
+
+  it("rejects verdicts from non-participants", () => {
+    const t = mailbox.createThread({ kind: "debate", participants: ["claude-code"] });
+    expect(() => mailbox.setVerdict(t.id, "intruder", "approve")).toThrow(NotAParticipantError);
+  });
+
+  it("emits thread events on verdict and close", () => {
+    const t = mailbox.createThread({ kind: "debate", participants: ["claude-code"] });
+    const seen: Thread[] = [];
+    mailbox.events.on("thread", (th: Thread) => seen.push(th));
+    mailbox.setVerdict(t.id, "claude-code", "approve");
+    expect(seen.at(-1)!.state).toBe("settled");
+    const t2 = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    mailbox.closeThread(t2.id);
+    expect(seen.at(-1)!.state).toBe("closed");
+  });
+
+  it("persists verdicts", () => {
+    const t = mailbox.createThread({ kind: "debate", participants: ["claude-code", "codex"] });
+    mailbox.setVerdict(t.id, "claude-code", "approve");
+    expect(mailbox.getThread(t.id)!.verdicts).toEqual({ "claude-code": "approve" });
   });
 });
