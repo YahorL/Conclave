@@ -139,6 +139,22 @@ describe("HTTP API", () => {
     const res = await app.inject({ method: "GET", url: "/health?probe=1" });
     expect(res.statusCode).toBe(200);
   });
+
+  it("fetches a single thread", async () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    const res = await app.inject({ method: "GET", url: `/api/threads/${t.id}`, headers: AUTH });
+    expect(res.statusCode).toBe(200);
+    expect(res.json<Thread>().id).toBe(t.id);
+  });
+
+  it("closes a thread over http and 404s on unknown ids", async () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    const res = await app.inject({ method: "POST", url: `/api/threads/${t.id}/close`, headers: AUTH });
+    expect(res.statusCode).toBe(200);
+    expect(res.json<Thread>().state).toBe("closed");
+    const missing = await app.inject({ method: "POST", url: "/api/threads/nope/close", headers: AUTH });
+    expect(missing.statusCode).toBe(404);
+  });
 });
 
 describe("long-poll", () => {

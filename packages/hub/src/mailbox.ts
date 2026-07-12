@@ -45,7 +45,9 @@ interface MessageRow {
 export class Mailbox {
   readonly events = new EventEmitter();
 
-  constructor(private readonly db: Database.Database) {}
+  constructor(private readonly db: Database.Database) {
+    this.events.setMaxListeners(0);
+  }
 
   createThread(input: NewThread): Thread {
     const thread: Thread = {
