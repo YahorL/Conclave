@@ -1,7 +1,8 @@
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } from "fastify";
 import websocket from "@fastify/websocket";
 import { z } from "zod";
-import { type Message, NewMessageSchema, NewThreadSchema } from "@conclave/shared";
+import type { Message, Thread } from "@conclave/shared";
+import { NewMessageSchema, NewThreadSchema } from "@conclave/shared";
 import {
   Mailbox,
   NotAParticipantError,
@@ -96,6 +97,21 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   app.post("/api/threads/:id/close", async (req) => {
     const { id } = IdParamsSchema.parse(req.params);
     return mailbox.closeThread(id);
+  });
+
+  app.get("/ws", { websocket: true }, (socket) => {
+    const onMessage = (message: Message): void => {
+      socket.send(JSON.stringify({ type: "message", message }));
+    };
+    const onThread = (thread: Thread): void => {
+      socket.send(JSON.stringify({ type: "thread", thread }));
+    };
+    mailbox.events.on("message", onMessage);
+    mailbox.events.on("thread", onThread);
+    socket.on("close", () => {
+      mailbox.events.off("message", onMessage);
+      mailbox.events.off("thread", onThread);
+    });
   });
 
   return app;
