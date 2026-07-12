@@ -124,4 +124,19 @@ describe("HTTP API", () => {
     });
     expect(res.json<Thread>().state).toBe("settled");
   });
+
+  it("maps malformed JSON to 400, not 500", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/threads",
+      headers: { ...AUTH, "content-type": "application/json" },
+      payload: "{not json",
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("health bypasses auth even with a query string", async () => {
+    const res = await app.inject({ method: "GET", url: "/health?probe=1" });
+    expect(res.statusCode).toBe(200);
+  });
 });

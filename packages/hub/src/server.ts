@@ -1,4 +1,4 @@
-import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
+import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } from "fastify";
 import websocket from "@fastify/websocket";
 import { z } from "zod";
 import { NewMessageSchema, NewThreadSchema } from "@conclave/shared";
@@ -27,17 +27,21 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   await app.register(websocket);
 
   app.addHook("onRequest", async (req, reply) => {
-    if (req.url === "/health") return;
+    if (req.url.split("?")[0] === "/health") return;
     const header = req.headers.authorization;
     const query = req.query as { token?: string };
     if (header === `Bearer ${token}` || query.token === token) return;
     await reply.code(401).send({ error: "unauthorized" });
   });
 
-  app.setErrorHandler((err, _req, reply) => {
+  app.setErrorHandler((err: FastifyError, _req, reply) => {
     if (err instanceof ThreadNotFoundError) return reply.code(404).send({ error: err.message });
     if (err instanceof ThreadClosedError) return reply.code(409).send({ error: err.message });
     if (err instanceof NotAParticipantError) return reply.code(403).send({ error: err.message });
+    if (err instanceof z.ZodError) return reply.code(400).send({ error: "invalid request" });
+    if (typeof err.statusCode === "number" && err.statusCode < 500) {
+      return reply.code(err.statusCode).send({ error: err.message });
+    }
     return reply.code(500).send({ error: "internal error" });
   });
 
