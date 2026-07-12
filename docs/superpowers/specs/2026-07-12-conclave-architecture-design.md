@@ -69,6 +69,7 @@ interface RuntimeAdapter {
 - `GeminiAdapter`: future, out of launch scope; the interface is the contract.
 - Sessions are resumable conversations, not one-shots. A debate turn = `resume(sessionId, newMessages)`. This preserves context without re-feeding transcripts and keeps subscription usage affordable.
 - Concurrency: per-runtime limit of 1 per machine (configurable); daemon-side queue. Cost/usage parsed from CLI output feeds the UI usage meters.
+- **CLI drift containment.** The CLIs' headless output formats and resume semantics are moving targets and the system's biggest external risk. Mitigations: registry records the CLI version each daemon reports; each adapter ships a contract test (spawn, one prompt, parse stream, resume, parse again) runnable manually after CLI upgrades; adapters fail loudly on unparseable output rather than guessing.
 - Every session gets one **local MCP server** (stdio) exposing hub tools: `send_message`, `check_inbox`, `wait_for_reply`, `end_thread(verdict)`, `create_artifact`, `request_approval`. The MCP server proxies to the hub over the daemon's WebSocket; CLIs never talk to the hub directly.
 
 ## 5. Data model
@@ -105,6 +106,11 @@ Covers PR reviews and free-form decision discussions.
 - Agents exit via `end_thread(verdict)`; verdict required (approve / reject / position summary). Thread settles when all participants have verdicts or round cap hits; orchestrator posts a synthesized summary.
 - PR flavor: thread pre-seeded with diff — local (`git diff`) or GitHub (`gh pr diff`); GitHub-sourced debates can post the outcome back as a PR comment.
 - User can interject anytime; the message simply joins the next round's context.
+- **Anti-convergence prompts.** LLM-vs-LLM debates drift toward polite agreement. Debate threads assign each participant a stance preset (e.g. advocate / skeptic / risk-reviewer) injected into the turn prompt; presets are configurable per debate. Expect iteration on these prompts — mechanics alone don't produce useful disagreement.
+
+### Usage-aware scheduling
+- The orchestrator checks an agent's usage before every orchestrated turn. Above a configurable threshold (default 80% of the 5-hour window), it refuses to start new debates/tasks with that agent and pauses in-flight debates at the end of the current round, posting a "paused: <agent> near usage limit, resets HH:MM" status. The user can override per thread ("continue anyway").
+- Rate-limited agents (hard limit hit) are treated as temporarily dead participants per §10.
 
 ### Delegation
 - `/task` from the user (or `send_message` from another agent, if ACL-allowed) creates a Task for a registry agent. Hub queues; target daemon picks it up, spawns the session in the agent's workspace folder, streams progress into the thread.
@@ -145,6 +151,7 @@ Mechanics:
 - React + Vite. Implements the handoff pixel-faithfully: Black (default) + Teal themes as CSS-variable token sets, IBM Plex Sans / JetBrains Mono, five regions (window tab strip, sidebar, session tabs, group chat, status strip). Mobile: chat-first, drawers for sidebar/status.
 - Terminal sessions render in xterm.js: interactive PTYs (shells + agent TUIs, §8a) are fully usable from laptop and phone; orchestrated headless sessions render as read-only streams with a "take over" affordance (§8a).
 - One WebSocket protocol for daemons and clients (role-differentiated). Web push for: approval requests, thread settled, task failed, usage threshold crossed.
+- **HTTPS is required** for service workers, PWA install, and web push (iOS especially). The hub is served over Tailscale HTTPS (`tailscale cert` / `tailscale serve` on the container host provides a valid cert for the tailnet hostname). Plain-HTTP access remains for curl/debug but the PWA must be installed from the HTTPS origin.
 - Tauri: webview onto the hub URL, tray + native notifications. Nothing else Tauri-specific at launch.
 
 ## 10. Error handling & resilience
@@ -171,6 +178,8 @@ Each step independently usable:
 6. ACLs + approvals + web push.
 7. Interactive terminals: PTY service in daemon, `terminals` grant, xterm.js sessions (shells + agent TUIs), take-over flow.
 8. UI completion: usage meters, file viewer/editor, Teal theme, mobile layout, Tauri shell.
+
+Steps 1–4 are the value core (agents debating and delegating, watchable from a browser); steps 5–8 are reach and polish. If priorities shift, the cut line is after step 4 — everything before it must not depend on anything after it.
 
 ## 13. Out of scope (explicit)
 
