@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #0b0b0d; }
+  a { color: #8fd0a0; text-decoration: none; }
+  a:hover { color: #b9e4c4; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .2; } }
+  @keyframes pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+</style>
+</helmet>
+
+<section style="padding: 48px; display: flex; flex-direction: column; gap: 40px; font-family: 'IBM Plex Sans', sans-serif;">
+  <div style="display: flex; align-items: baseline; gap: 16px;">
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #6b7280; letter-spacing: 2px;">TURN 3 — TRAYCER HYBRID + TERMINALS + USAGE · COLOR STUDIES</div>
+    <div style="font-size: 13px; color: #4b5563;">3a teal · 3b ember · 3c iris · 3d signal · 4a black</div>
+  </div>
+
+  <!-- ============ 4a · FULL MOCK, PURE BLACK ============ -->
+  <div id="4a" style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="#4a" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #f5f5f5; border: 1px solid #333; padding: 4px 10px; border-radius: 4px; background: #000;">4a</a>
+      <div style="color: #e5e7eb; font-weight: 600; font-size: 15px;">Black — pure-black base, white selection, teal reserved for live signals only</div>
+    </div>
+
+    <div style="width: 1500px; height: 960px; background: #000; border: 1px solid #262626; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; font-family: 'IBM Plex Sans', sans-serif; color: #c9c9c9;" data-screen-label="4a Black — group chat + terminals + usage">
+      <!-- window tab strip -->
+      <div style="height: 44px; display: flex; align-items: flex-end; background: #000; padding: 0 12px; gap: 2px; border-bottom: 1px solid #1f1f1f;">
+        <div style="display: flex; gap: 6px; align-items: center; padding: 0 14px 12px 6px; color: #555; font-size: 14px;">←&nbsp;&nbsp;→</div>
+        <div style="padding: 9px 18px; background: #0d0d0d; border: 1px solid #262626; border-bottom: none; border-radius: 8px 8px 0 0; font-size: 12.5px; color: #f5f5f5; display: flex; align-items: center; gap: 8px;">payments-service<span style="color: #555;">×</span></div>
+        <div style="padding: 9px 18px; font-size: 12.5px; color: #737373;">design-system</div>
+        <div style="padding: 9px 14px; font-size: 14px; color: #555;">+</div>
+        <div style="margin-left: auto; padding-bottom: 10px; display: flex; gap: 14px; color: #555; font-size: 12px; align-items: center;">
+          <span>⚙</span><span>⟲</span><span style="color: #e5e5e5; font-family: 'JetBrains Mono', monospace; font-size: 11px;">$4.82 · 312k tok</span>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; min-height: 0; background: #0d0d0d;">
+        <!-- sidebar -->
+        <div style="width: 272px; border-right: 1px solid #1f1f1f; background: #050505; display: flex; flex-direction: column;">
+          <div style="display: flex; gap: 6px; padding: 12px 14px; border-bottom: 1px solid #1a1a1a;">
+            <div style="width: 32px; height: 30px; border-radius: 6px; background: #171717; border-bottom: 2px solid #f5f5f5; display: flex; align-items: center; justify-content: center; color: #f5f5f5; font-size: 13px;">▤</div>
+            <div style="width: 32px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 13px;">›_</div>
+            <div style="width: 32px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 13px;">⎇</div>
+            <div style="width: 32px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 13px;">◫</div>
+            <div style="width: 32px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 13px;">+⃝</div>
+          </div>
+          <!-- chats -->
+          <div style="padding: 14px 14px 6px; display: flex; align-items: center; font-size: 10.5px; letter-spacing: 2px; color: #555;">▾&nbsp; CHATS<span style="margin-left: auto; font-size: 14px;">+</span></div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 8px; font-size: 12.5px;">
+            <div style="padding: 9px 12px; border-radius: 7px; background: #f5f5f5; color: #0a0a0a; display: flex; align-items: center; gap: 9px; font-weight: 600;"><span>◉</span> Idempotency war-room</div>
+            <div style="padding: 9px 12px; border-radius: 7px; color: #8a8a8a; display: flex; align-items: center; gap: 9px;"><span style="color: #555;">◻</span> SDK retry audit</div>
+            <div style="padding: 9px 12px; border-radius: 7px; color: #8a8a8a; display: flex; align-items: center; gap: 9px;"><span style="color: #e8a06a;">⇄</span> claude-code ↔ codex <span style="margin-left: auto; background: #262626; color: #f5f5f5; border-radius: 8px; padding: 0 7px; font-size: 10.5px;">3</span></div>
+          </div>
+          <!-- terminals -->
+          <div style="padding: 18px 14px 6px; display: flex; align-items: center; font-size: 10.5px; letter-spacing: 2px; color: #555;">▾&nbsp; TERMINALS<span style="margin-left: auto; font-size: 14px;">+</span></div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 8px; font-size: 12.5px; font-family: 'JetBrains Mono', monospace;">
+            <div style="padding: 8px 12px; border-radius: 7px; color: #c9c9c9; display: flex; align-items: center; gap: 9px;"><span style="color: #e8a06a;">❯_</span> claude-code · pnpm test<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 8px 12px; border-radius: 7px; color: #c9c9c9; display: flex; align-items: center; gap: 9px;"><span style="color: #7dd3fc;">❯_</span> codex · repl<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 8px 12px; border-radius: 7px; color: #8a8a8a; display: flex; align-items: center; gap: 9px;"><span style="color: #555;">❯_</span> zsh · you</div>
+          </div>
+          <!-- agents -->
+          <div style="padding: 18px 14px 6px; font-size: 10.5px; letter-spacing: 2px; color: #555;">▾&nbsp; AGENTS</div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 8px; font-size: 12.5px;">
+            <div style="padding: 7px 12px; display: flex; align-items: center; gap: 9px; color: #c9c9c9;"><div style="width: 18px; height: 18px; border-radius: 5px; background: #e8a06a; color: #1a0f06; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">CC</div>claude-code<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 7px 12px; display: flex; align-items: center; gap: 9px; color: #c9c9c9;"><div style="width: 18px; height: 18px; border-radius: 5px; background: #7dd3fc; color: #06121a; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">CX</div>codex<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 7px 12px; display: flex; align-items: center; gap: 9px; color: #c9c9c9;"><div style="width: 18px; height: 18px; border-radius: 5px; background: #c4b5fd; color: #120a1f; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">RV</div>reviewer<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #facc15;"></span></div>
+          </div>
+          <!-- artifacts -->
+          <div style="margin-top: auto; border-top: 1px solid #1a1a1a; padding: 12px 14px 6px; display: flex; align-items: center; font-size: 10.5px; letter-spacing: 2px; color: #555;">▾&nbsp; ARTIFACTS<span style="margin-left: auto; font-size: 14px;">+</span></div>
+          <div style="display: flex; flex-direction: column; padding: 4px 8px 14px; font-size: 12px;">
+            <div style="padding: 7px 12px; display: flex; gap: 9px; color: #8a8a8a; border-left: 2px solid #f5f5f5; margin-left: 6px;"><span style="color: #f28b82;">▦</span> Idempotency plan — v2</div>
+            <div style="padding: 7px 12px; display: flex; gap: 9px; color: #8a8a8a; border-left: 2px solid transparent; margin-left: 6px;"><span style="color: #fbbf24;">▤</span> Tickets (4)</div>
+          </div>
+        </div>
+        <!-- main -->
+        <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
+          <!-- session tabs -->
+          <div style="display: flex; align-items: stretch; border-bottom: 1px solid #1f1f1f; background: #050505;">
+            <div style="padding: 12px 20px; border-top: 2px solid #f5f5f5; background: #0d0d0d; border-right: 1px solid #1f1f1f; font-size: 13px; color: #f5f5f5; display: flex; gap: 9px; align-items: center;"><span>❖</span> Idempotency war-room</div>
+            <div style="padding: 12px 20px; font-size: 13px; color: #737373; display: flex; gap: 9px; align-items: center; border-right: 1px solid #1a1a1a;"><span style="color: #e8a06a;">❯_</span> claude-code · pnpm test</div>
+            <div style="padding: 12px 20px; font-size: 13px; color: #737373; font-style: italic; display: flex; gap: 9px; align-items: center;"><span>▦</span> Idempotency plan — v2</div>
+          </div>
+          <!-- context toolbar -->
+          <div style="display: flex; align-items: center; gap: 18px; padding: 10px 20px; border-bottom: 1px solid #1a1a1a; font-size: 12px; color: #8a8a8a;">
+            <span style="display: flex; align-items: center; gap: 7px; color: #c9c9c9;">3 agents ▾</span>
+            <span style="display: flex; align-items: center; gap: 7px;">▣ payments-service · main ▾</span>
+            <span style="color: #f5f5f5;">Epic Mode</span>
+            <span>⑂ Fork</span>
+            <span style="margin-left: auto; color: #555; font-family: 'JetBrains Mono', monospace; font-size: 11px;">● all changes reviewed</span>
+          </div>
+          <!-- chat -->
+          <div style="flex: 1; overflow: hidden; padding: 20px 26px; display: flex; flex-direction: column; gap: 16px; font-size: 13px; line-height: 1.65;">
+            <div style="display: flex; gap: 12px;">
+              <div style="width: 26px; height: 26px; border-radius: 50%; background: #f5f5f5; color: #0a0a0a; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">MK</div>
+              <div><div style="display: flex; gap: 10px; align-items: baseline;"><span style="color: #f5f5f5; font-weight: 600;">you</span><span style="color: #555; font-size: 10.5px;">14:02</span></div>
+              <div>We need idempotency keys on the charge endpoint. <span style="color: #f5f5f5; background: #1f1f1f; padding: 0 5px; border-radius: 4px;">@claude-code</span> propose a schema, <span style="color: #f5f5f5; background: #1f1f1f; padding: 0 5px; border-radius: 4px;">@codex</span> check how Stripe's SDK handles retries.</div></div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <div style="width: 26px; height: 26px; border-radius: 5px; background: #e8a06a; color: #1a0f06; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">CC</div>
+              <div style="min-width: 0;"><div style="display: flex; gap: 10px; align-items: baseline;"><span style="color: #e8a06a; font-weight: 600;">claude-code</span><span style="color: #555; font-size: 10.5px;">14:03</span><span style="font-size: 10px; color: #d4d4d4; border: 1px solid #333; padding: 1px 7px; border-radius: 9px;">plan</span></div>
+              <div>Proposal: <span style="color: #e5e5e5; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #171717; padding: 0 5px; border-radius: 4px;">idempotency_keys</span> keyed on <span style="color: #e5e5e5; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #171717; padding: 0 5px; border-radius: 4px;">(merchant_id, key)</span>, 24h TTL, response snapshot. Middleware short-circuits replays. See <span style="color: #d4d4d4; text-decoration: underline; text-underline-offset: 3px;">payments/middleware/idem.ts:41</span>.</div>
+              <div style="margin-top: 8px; background: #000; border: 1px solid #1f1f1f; border-radius: 7px; padding: 10px 14px; font-size: 11.5px; color: #a3a3a3; white-space: pre; font-family: 'JetBrains Mono', monospace;">CREATE TABLE idempotency_keys (
+  merchant_id  uuid NOT NULL,
+  key          text NOT NULL,
+  status_code  int,
+  body_hash    bytea,
+  PRIMARY KEY (merchant_id, key)
+);</div></div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <div style="width: 26px; height: 26px; border-radius: 5px; background: #7dd3fc; color: #06121a; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">CX</div>
+              <div><div style="display: flex; gap: 10px; align-items: baseline;"><span style="color: #7dd3fc; font-weight: 600;">codex</span><span style="color: #555; font-size: 10.5px;">14:04</span></div>
+              <div><span style="color: #f5f5f5; background: #1f1f1f; padding: 0 5px; border-radius: 4px;">@claude-code</span> stripe-node reuses the key for 24h — matching TTL is right. Concern: hash-only 2xx means replays can't return a body. Either keep bodies 24h or return 425 + poll.</div></div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <div style="width: 26px; height: 26px; border-radius: 5px; background: #c4b5fd; color: #120a1f; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">RV</div>
+              <div style="color: #737373; font-size: 12px; display: flex; gap: 8px; align-items: center;">reviewer is thinking<span style="animation: blink 1.2s infinite; color: #f5f5f5;">▮</span></div>
+            </div>
+            <div style="margin-left: 38px; background: #000; border: 1px solid #1f1f1f; border-radius: 7px; overflow: hidden;">
+              <div style="padding: 6px 12px; border-bottom: 1px solid #1a1a1a; display: flex; gap: 10px; font-size: 10px; color: #555; font-family: 'JetBrains Mono', monospace;"><span style="color: #e8a06a;">claude-code</span><span>▸ terminal · attached</span><span style="margin-left: auto; color: #2dd4bf; animation: pulse 1.6s infinite;">● streaming</span></div>
+              <div style="padding: 10px 12px; font-size: 11px; color: #a3a3a3; white-space: pre; line-height: 1.7; font-family: 'JetBrains Mono', monospace;">$ pnpm test payments/idempotency
+ PASS  replay returns cached 2xx      (41 ms)
+ RUNS  concurrent replay race…<span style="animation: blink 1s infinite;">_</span></div>
+            </div>
+          </div>
+          <!-- composer -->
+          <div style="padding: 14px 22px 18px;">
+            <div style="border: 1px solid #333; background: #050505; border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; font-size: 12.5px;">
+              <span style="color: #f5f5f5;">›</span>
+              <span style="color: #555;">Message war-room — @agent to direct, /task to assign</span>
+              <span style="margin-left: auto; color: #555; font-size: 10.5px; font-family: 'JetBrains Mono', monospace;">⏎ send</span>
+            </div>
+          </div>
+        </div>
+        <!-- status + usage strip -->
+        <div style="width: 280px; border-left: 1px solid #1f1f1f; background: #050505; padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; font-size: 11.5px;">
+          <div style="font-size: 10.5px; letter-spacing: 2px; color: #555;">LIVE STATUS</div>
+          <div style="border: 1px solid #1f1f1f; border-radius: 8px; padding: 11px 12px; display: flex; flex-direction: column; gap: 7px; background: #0d0d0d;">
+            <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #e8a06a;"></div><span style="color: #f5f5f5; font-weight: 600;">claude-code</span><span style="margin-left: auto; color: #2dd4bf;">● running</span></div>
+            <div style="color: #737373;">writing migration 0043</div>
+            <div style="height: 3px; background: #1f1f1f; border-radius: 2px;"><div style="width: 62%; height: 100%; background: #f5f5f5; border-radius: 2px;"></div></div>
+          </div>
+          <div style="border: 1px solid #1f1f1f; border-radius: 8px; padding: 11px 12px; display: flex; flex-direction: column; gap: 7px; background: #0d0d0d;">
+            <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #7dd3fc;"></div><span style="color: #f5f5f5; font-weight: 600;">codex</span><span style="margin-left: auto; color: #2dd4bf;">● running</span></div>
+            <div style="color: #737373;">auditing retry semantics</div>
+            <div style="height: 3px; background: #1f1f1f; border-radius: 2px;"><div style="width: 84%; height: 100%; background: #f5f5f5; border-radius: 2px;"></div></div>
+          </div>
+          <div style="border: 1px solid #1f1f1f; border-radius: 8px; padding: 11px 12px; display: flex; flex-direction: column; gap: 7px; background: #0d0d0d;">
+            <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #c4b5fd;"></div><span style="color: #f5f5f5; font-weight: 600;">reviewer</span><span style="margin-left: auto; color: #facc15;">● blocked</span></div>
+            <div style="color: #737373;">waiting on PR #412</div>
+          </div>
+          <!-- usage limits dashboard -->
+          <div style="margin-top: 6px; font-size: 10.5px; letter-spacing: 2px; color: #555; display: flex; align-items: center;">USAGE LIMITS<span style="margin-left: auto; color: #d4d4d4; letter-spacing: 0; font-size: 11px;">details →</span></div>
+          <div style="border: 1px solid #1f1f1f; border-radius: 8px; background: #0d0d0d; padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 10px; height: 10px; border-radius: 3px; background: #e8a06a;"></div><span style="color: #f5f5f5;">claude-code</span><span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8a8a8a;">5h · 72%</span></div>
+              <div style="height: 5px; background: #1f1f1f; border-radius: 3px;"><div style="width: 72%; height: 100%; background: linear-gradient(90deg, #d4d4d4, #facc15); border-radius: 3px;"></div></div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #555; font-family: 'JetBrains Mono', monospace;"><span>week 41%</span><span>resets 16:40</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 10px; height: 10px; border-radius: 3px; background: #7dd3fc;"></div><span style="color: #f5f5f5;">codex</span><span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8a8a8a;">day · 38%</span></div>
+              <div style="height: 5px; background: #1f1f1f; border-radius: 3px;"><div style="width: 38%; height: 100%; background: #d4d4d4; border-radius: 3px;"></div></div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #555; font-family: 'JetBrains Mono', monospace;"><span>week 22%</span><span>resets 00:00</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 10px; height: 10px; border-radius: 3px; background: #c4b5fd;"></div><span style="color: #f5f5f5;">reviewer</span><span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #f2a65a;">5h · 91%</span></div>
+              <div style="height: 5px; background: #1f1f1f; border-radius: 3px;"><div style="width: 91%; height: 100%; background: linear-gradient(90deg, #facc15, #f87171); border-radius: 3px;"></div></div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #555; font-family: 'JetBrains Mono', monospace;"><span>week 67%</span><span style="color: #f2a65a;">⚠ throttle soon</span></div>
+            </div>
+          </div>
+          <div style="margin-top: auto; border-top: 1px solid #1a1a1a; padding-top: 10px; display: flex; justify-content: space-between; color: #737373; font-family: 'JetBrains Mono', monospace; font-size: 10.5px;"><span>workspace today</span><span style="color: #f5f5f5;">$4.82 / $25</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3a · FULL MOCK, TEAL ============ -->
+  <div id="3a" style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="#3a" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #2dd4bf; border: 1px solid #1e3a37; padding: 4px 10px; border-radius: 4px; background: #0d1a18;">3a</a>
+      <div style="color: #e5e7eb; font-weight: 600; font-size: 15px;">Teal — with TERMINALS in the sidebar + agent usage-limits dashboard</div>
+    </div>
+
+    <div style="width: 1500px; height: 960px; background: #131918; border: 1px solid #243230; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; font-family: 'IBM Plex Sans', sans-serif; color: #c9d4d1;" data-screen-label="3a Teal — group chat + terminals + usage">
+      <!-- window tab strip -->
+      <div style="height: 44px; display: flex; align-items: flex-end; background: #0e1312; padding: 0 12px; gap: 2px; border-bottom: 1px solid #243230;">
+        <div style="display: flex; gap: 6px; align-items: center; padding: 0 14px 12px 6px; color: #5f6f6c; font-size: 14px;">←&nbsp;&nbsp;→</div>
+        <div style="padding: 9px 18px; background: #131918; border: 1px solid #243230; border-bottom: none; border-radius: 8px 8px 0 0; font-size: 12.5px; color: #e6edeb; display: flex; align-items: center; gap: 8px;">payments-service<span style="color: #5f6f6c;">×</span></div>
+        <div style="padding: 9px 18px; font-size: 12.5px; color: #7c8c88;">design-system</div>
+        <div style="padding: 9px 14px; font-size: 14px; color: #5f6f6c;">+</div>
+        <div style="margin-left: auto; padding-bottom: 10px; display: flex; gap: 14px; color: #5f6f6c; font-size: 12px; align-items: center;">
+          <span>⚙</span><span>⟲</span><span style="color: #2dd4bf;">$4.82 · 312k tok</span>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; min-height: 0;">
+        <!-- sidebar -->
+        <div style="width: 272px; border-right: 1px solid #243230; background: #101615; display: flex; flex-direction: column;">
+          <div style="display: flex; gap: 6px; padding: 12px 14px; border-bottom: 1px solid #1c2624;">
+            <div style="width: 32px; height: 30px; border-radius: 6px; background: #16201e; border-bottom: 2px solid #2dd4bf; display: flex; align-items: center; justify-content: center; color: #2dd4bf; font-size: 13px;">▤</div>
+            <div style="width: 32px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #5f6f6c; font-size: 13px;">›_</div>
+            <div style="width: 32px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #5f6f6c; font-size: 13px;">⎇</div>
+            <div style="width: 32px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #5f6f6c; font-size: 13px;">◫</div>
+            <div style="width: 32px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #5f6f6c; font-size: 13px;">+⃝</div>
+          </div>
+          <!-- chats -->
+          <div style="padding: 14px 14px 6px; display: flex; align-items: center; font-size: 10.5px; letter-spacing: 2px; color: #5f6f6c;">▾&nbsp; CHATS<span style="margin-left: auto; font-size: 14px;">+</span></div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 8px; font-size: 12.5px;">
+            <div style="padding: 9px 12px; border-radius: 7px; background: #124e46; color: #eafffb; display: flex; align-items: center; gap: 9px; font-weight: 500;"><span style="color: #5eead4;">◉</span> Idempotency war-room</div>
+            <div style="padding: 9px 12px; border-radius: 7px; color: #93a5a1; display: flex; align-items: center; gap: 9px;"><span style="color: #5f6f6c;">◻</span> SDK retry audit</div>
+            <div style="padding: 9px 12px; border-radius: 7px; color: #93a5a1; display: flex; align-items: center; gap: 9px;"><span style="color: #e8a06a;">⇄</span> claude-code ↔ codex <span style="margin-left: auto; background: #124e46; color: #5eead4; border-radius: 8px; padding: 0 7px; font-size: 10.5px;">3</span></div>
+          </div>
+          <!-- terminals -->
+          <div style="padding: 18px 14px 6px; display: flex; align-items: center; font-size: 10.5px; letter-spacing: 2px; color: #5f6f6c;">▾&nbsp; TERMINALS<span style="margin-left: auto; font-size: 14px;">+</span></div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 8px; font-size: 12.5px; font-family: 'JetBrains Mono', monospace;">
+            <div style="padding: 8px 12px; border-radius: 7px; color: #c9d4d1; display: flex; align-items: center; gap: 9px;"><span style="color: #e8a06a;">❯_</span> claude-code · pnpm test<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 8px 12px; border-radius: 7px; color: #c9d4d1; display: flex; align-items: center; gap: 9px;"><span style="color: #7dd3fc;">❯_</span> codex · repl<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 8px 12px; border-radius: 7px; color: #93a5a1; display: flex; align-items: center; gap: 9px;"><span style="color: #5f6f6c;">❯_</span> zsh · you</div>
+          </div>
+          <!-- agents -->
+          <div style="padding: 18px 14px 6px; font-size: 10.5px; letter-spacing: 2px; color: #5f6f6c;">▾&nbsp; AGENTS</div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 8px; font-size: 12.5px;">
+            <div style="padding: 7px 12px; display: flex; align-items: center; gap: 9px; color: #c9d4d1;"><div style="width: 18px; height: 18px; border-radius: 5px; background: #e8a06a; color: #1a0f06; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">CC</div>claude-code<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 7px 12px; display: flex; align-items: center; gap: 9px; color: #c9d4d1;"><div style="width: 18px; height: 18px; border-radius: 5px; background: #7dd3fc; color: #06121a; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">CX</div>codex<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2dd4bf; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 7px 12px; display: flex; align-items: center; gap: 9px; color: #c9d4d1;"><div style="width: 18px; height: 18px; border-radius: 5px; background: #c4b5fd; color: #120a1f; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">RV</div>reviewer<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #facc15;"></span></div>
+          </div>
+          <!-- artifacts -->
+          <div style="margin-top: auto; border-top: 1px solid #1c2624; padding: 12px 14px 6px; display: flex; align-items: center; font-size: 10.5px; letter-spacing: 2px; color: #5f6f6c;">▾&nbsp; ARTIFACTS<span style="margin-left: auto; font-size: 14px;">+</span></div>
+          <div style="display: flex; flex-direction: column; padding: 4px 8px 14px; font-size: 12px;">
+            <div style="padding: 7px 12px; display: flex; gap: 9px; color: #93a5a1; border-left: 2px solid #2dd4bf; margin-left: 6px;"><span style="color: #f28b82;">▦</span> Idempotency plan — v2</div>
+            <div style="padding: 7px 12px; display: flex; gap: 9px; color: #93a5a1; border-left: 2px solid transparent; margin-left: 6px;"><span style="color: #fbbf24;">▤</span> Tickets (4)</div>
+          </div>
+        </div>
+        <!-- main -->
+        <div style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
+          <!-- session tabs -->
+          <div style="display: flex; align-items: stretch; border-bottom: 1px solid #243230; background: #0f1514;">
+            <div style="padding: 12px 20px; border-top: 2px solid #2dd4bf; background: #131918; border-right: 1px solid #243230; font-size: 13px; color: #e6edeb; display: flex; gap: 9px; align-items: center;"><span style="color: #2dd4bf;">❖</span> Idempotency war-room</div>
+            <div style="padding: 12px 20px; font-size: 13px; color: #7c8c88; display: flex; gap: 9px; align-items: center; border-right: 1px solid #1c2624;"><span style="color: #e8a06a;">❯_</span> claude-code · pnpm test</div>
+            <div style="padding: 12px 20px; font-size: 13px; color: #7c8c88; font-style: italic; display: flex; gap: 9px; align-items: center;"><span>▦</span> Idempotency plan — v2</div>
+          </div>
+          <!-- context toolbar -->
+          <div style="display: flex; align-items: center; gap: 18px; padding: 10px 20px; border-bottom: 1px solid #1c2624; font-size: 12px; color: #93a5a1;">
+            <span style="display: flex; align-items: center; gap: 7px; color: #c9d4d1;">3 agents ▾</span>
+            <span style="display: flex; align-items: center; gap: 7px;">▣ payments-service · main ▾</span>
+            <span style="color: #2dd4bf;">Epic Mode</span>
+            <span>⑂ Fork</span>
+            <span style="margin-left: auto; color: #5f6f6c; font-family: 'JetBrains Mono', monospace; font-size: 11px;">● all changes reviewed</span>
+          </div>
+          <!-- chat -->
+          <div style="flex: 1; overflow: hidden; padding: 20px 26px; display: flex; flex-direction: column; gap: 16px; font-size: 13px; line-height: 1.65;">
+            <div style="display: flex; gap: 12px;">
+              <div style="width: 26px; height: 26px; border-radius: 50%; background: #124e46; color: #5eead4; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">MK</div>
+              <div><div style="display: flex; gap: 10px; align-items: baseline;"><span style="color: #e6edeb; font-weight: 600;">you</span><span style="color: #5f6f6c; font-size: 10.5px;">14:02</span></div>
+              <div>We need idempotency keys on the charge endpoint. <span style="color: #2dd4bf;">@claude-code</span> propose a schema, <span style="color: #2dd4bf;">@codex</span> check how Stripe's SDK handles retries.</div></div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <div style="width: 26px; height: 26px; border-radius: 5px; background: #e8a06a; color: #1a0f06; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">CC</div>
+              <div style="min-width: 0;"><div style="display: flex; gap: 10px; align-items: baseline;"><span style="color: #e8a06a; font-weight: 600;">claude-code</span><span style="color: #5f6f6c; font-size: 10.5px;">14:03</span><span style="font-size: 10px; color: #5eead4; border: 1px solid #1e4a44; padding: 1px 7px; border-radius: 9px;">plan</span></div>
+              <div>Proposal: <span style="color: #5eead4; font-family: 'JetBrains Mono', monospace; font-size: 12px;">idempotency_keys</span> keyed on <span style="color: #5eead4; font-family: 'JetBrains Mono', monospace; font-size: 12px;">(merchant_id, key)</span>, 24h TTL, response snapshot. Middleware short-circuits replays. See <span style="color: #2dd4bf;">payments/middleware/idem.ts:41</span>.</div>
+              <div style="margin-top: 8px; background: #0e1312; border: 1px solid #243230; border-radius: 7px; padding: 10px 14px; font-size: 11.5px; color: #8fb5ac; white-space: pre; font-family: 'JetBrains Mono', monospace;">CREATE TABLE idempotency_keys (
+  merchant_id  uuid NOT NULL,
+  key          text NOT NULL,
+  status_code  int,
+  body_hash    bytea,
+  PRIMARY KEY (merchant_id, key)
+);</div></div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+              <div style="width: 26px; height: 26px; border-radius: 5px; background: #7dd3fc; color: #06121a; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">CX</div>
+              <div><div style="display: flex; gap: 10px; align-items: baseline;"><span style="color: #7dd3fc; font-weight: 600;">codex</span><span style="color: #5f6f6c; font-size: 10.5px;">14:04</span></div>
+              <div><span style="color: #2dd4bf;">@claude-code</span> stripe-node reuses the key for 24h — matching TTL is right. Concern: hash-only 2xx means replays can't return a body. Either keep bodies 24h or return 425 + poll.</div></div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <div style="width: 26px; height: 26px; border-radius: 5px; background: #c4b5fd; color: #120a1f; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;">RV</div>
+              <div style="color: #7c8c88; font-size: 12px; display: flex; gap: 8px; align-items: center;">reviewer is thinking<span style="animation: blink 1.2s infinite; color: #2dd4bf;">▮</span></div>
+            </div>
+            <div style="margin-left: 38px; background: #0b100f; border: 1px solid #243230; border-radius: 7px; overflow: hidden;">
+              <div style="padding: 6px 12px; border-bottom: 1px solid #1c2624; display: flex; gap: 10px; font-size: 10px; color: #5f6f6c; font-family: 'JetBrains Mono', monospace;"><span style="color: #e8a06a;">claude-code</span><span>▸ terminal · attached</span><span style="margin-left: auto; color: #2dd4bf; animation: pulse 1.6s infinite;">● streaming</span></div>
+              <div style="padding: 10px 12px; font-size: 11px; color: #8fb5ac; white-space: pre; line-height: 1.7; font-family: 'JetBrains Mono', monospace;">$ pnpm test payments/idempotency
+ PASS  replay returns cached 2xx      (41 ms)
+ RUNS  concurrent replay race…<span style="animation: blink 1s infinite;">_</span></div>
+            </div>
+          </div>
+          <!-- composer -->
+          <div style="padding: 14px 22px 18px;">
+            <div style="border: 1px solid #2a3a37; background: #0f1514; border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; font-size: 12.5px;">
+              <span style="color: #2dd4bf;">›</span>
+              <span style="color: #5f6f6c;">Message war-room — @agent to direct, /task to assign</span>
+              <span style="margin-left: auto; color: #5f6f6c; font-size: 10.5px; font-family: 'JetBrains Mono', monospace;">⏎ send</span>
+            </div>
+          </div>
+        </div>
+        <!-- status + usage strip -->
+        <div style="width: 280px; border-left: 1px solid #243230; background: #101615; padding: 16px 14px; display: flex; flex-direction: column; gap: 12px; font-size: 11.5px;">
+          <div style="font-size: 10.5px; letter-spacing: 2px; color: #5f6f6c;">LIVE STATUS</div>
+          <div style="border: 1px solid #243230; border-radius: 8px; padding: 11px 12px; display: flex; flex-direction: column; gap: 7px; background: #0f1514;">
+            <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #e8a06a;"></div><span style="color: #e6edeb; font-weight: 600;">claude-code</span><span style="margin-left: auto; color: #2dd4bf;">● running</span></div>
+            <div style="color: #7c8c88;">writing migration 0043</div>
+            <div style="height: 3px; background: #1c2624; border-radius: 2px;"><div style="width: 62%; height: 100%; background: #2dd4bf; border-radius: 2px;"></div></div>
+          </div>
+          <div style="border: 1px solid #243230; border-radius: 8px; padding: 11px 12px; display: flex; flex-direction: column; gap: 7px; background: #0f1514;">
+            <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #7dd3fc;"></div><span style="color: #e6edeb; font-weight: 600;">codex</span><span style="margin-left: auto; color: #2dd4bf;">● running</span></div>
+            <div style="color: #7c8c88;">auditing retry semantics</div>
+            <div style="height: 3px; background: #1c2624; border-radius: 2px;"><div style="width: 84%; height: 100%; background: #2dd4bf; border-radius: 2px;"></div></div>
+          </div>
+          <div style="border: 1px solid #243230; border-radius: 8px; padding: 11px 12px; display: flex; flex-direction: column; gap: 7px; background: #0f1514;">
+            <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #c4b5fd;"></div><span style="color: #e6edeb; font-weight: 600;">reviewer</span><span style="margin-left: auto; color: #facc15;">● blocked</span></div>
+            <div style="color: #7c8c88;">waiting on PR #412</div>
+          </div>
+          <!-- usage limits dashboard -->
+          <div style="margin-top: 6px; font-size: 10.5px; letter-spacing: 2px; color: #5f6f6c; display: flex; align-items: center;">USAGE LIMITS<span style="margin-left: auto; color: #2dd4bf; letter-spacing: 0; font-size: 11px;">details →</span></div>
+          <div style="border: 1px solid #243230; border-radius: 8px; background: #0f1514; padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 10px; height: 10px; border-radius: 3px; background: #e8a06a;"></div><span style="color: #e6edeb;">claude-code</span><span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #93a5a1;">5h · 72%</span></div>
+              <div style="height: 5px; background: #1c2624; border-radius: 3px;"><div style="width: 72%; height: 100%; background: linear-gradient(90deg, #2dd4bf, #facc15); border-radius: 3px;"></div></div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #5f6f6c; font-family: 'JetBrains Mono', monospace;"><span>week 41%</span><span>resets 16:40</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 10px; height: 10px; border-radius: 3px; background: #7dd3fc;"></div><span style="color: #e6edeb;">codex</span><span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #93a5a1;">day · 38%</span></div>
+              <div style="height: 5px; background: #1c2624; border-radius: 3px;"><div style="width: 38%; height: 100%; background: #2dd4bf; border-radius: 3px;"></div></div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #5f6f6c; font-family: 'JetBrains Mono', monospace;"><span>week 22%</span><span>resets 00:00</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 10px; height: 10px; border-radius: 3px; background: #c4b5fd;"></div><span style="color: #e6edeb;">reviewer</span><span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #f2a65a;">5h · 91%</span></div>
+              <div style="height: 5px; background: #1c2624; border-radius: 3px;"><div style="width: 91%; height: 100%; background: linear-gradient(90deg, #facc15, #f87171); border-radius: 3px;"></div></div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; color: #5f6f6c; font-family: 'JetBrains Mono', monospace;"><span>week 67%</span><span style="color: #f2a65a;">⚠ throttle soon</span></div>
+            </div>
+          </div>
+          <div style="margin-top: auto; border-top: 1px solid #1c2624; padding-top: 10px; display: flex; justify-content: space-between; color: #7c8c88; font-family: 'JetBrains Mono', monospace; font-size: 10.5px;"><span>workspace today</span><span style="color: #e6edeb;">$4.82 / $25</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ COLOR STUDIES ============ -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="color: #e5e7eb; font-weight: 600; font-size: 15px;">Alternate color schemes — same layout, sidebar + chat excerpt</div>
+    <div style="display: flex; gap: 24px; align-items: flex-start;">
+
+      <!-- 3b ember -->
+      <div id="3b" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="#3b" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #f0955c; border: 1px solid #46301f; padding: 3px 9px; border-radius: 4px; background: #1c130c;">3b</a>
+          <div style="color: #cbd5e1; font-size: 13px;">Ember — warm charcoal · amber accent</div>
+        </div>
+        <div style="width: 470px; height: 560px; background: #191512; border: 1px solid #322a23; border-radius: 10px; overflow: hidden; display: flex; font-size: 12px; color: #d3c9be;" data-screen-label="3b Ember colorway">
+          <div style="width: 176px; background: #151210; border-right: 1px solid #2a231d; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px;">
+            <div style="padding: 4px 10px 8px; font-size: 10px; letter-spacing: 2px; color: #6e6157;">CHATS</div>
+            <div style="padding: 8px 11px; border-radius: 7px; background: #55341c; color: #ffe9d8; display: flex; gap: 8px; align-items: center;"><span style="color: #f0955c;">◉</span> war-room</div>
+            <div style="padding: 8px 11px; border-radius: 7px; color: #8e8177;">SDK retry audit</div>
+            <div style="padding: 12px 10px 6px; font-size: 10px; letter-spacing: 2px; color: #6e6157;">TERMINALS</div>
+            <div style="padding: 7px 11px; color: #d3c9be; font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; gap: 8px; align-items: center;"><span style="color: #f0955c;">❯_</span> cc · pnpm test<span style="margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: #f0955c; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 7px 11px; color: #8e8177; font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; gap: 8px;"><span>❯_</span> zsh · you</div>
+            <div style="margin-top: auto; border-top: 1px solid #2a231d; padding: 10px 10px 2px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="font-size: 10px; letter-spacing: 2px; color: #6e6157;">USAGE</div>
+              <div style="height: 5px; background: #2a231d; border-radius: 3px;"><div style="width: 72%; height: 100%; background: #f0955c; border-radius: 3px;"></div></div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #8e8177;">cc 5h · 72% · resets 16:40</div>
+            </div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; padding: 14px; gap: 12px;">
+            <div style="font-size: 11px; color: #8e8177; border-bottom: 1px solid #2a231d; padding-bottom: 9px; display: flex; gap: 8px;"><span style="color: #ffe9d8;">❖ war-room</span><span>· 3 agents</span></div>
+            <div style="line-height: 1.6;"><span style="color: #e8a06a; font-weight: 600;">claude-code</span><span style="color: #6e6157; font-size: 10px;"> 14:03</span><br>Proposal: <span style="color: #f0955c; font-family: 'JetBrains Mono', monospace; font-size: 11px;">idempotency_keys</span>, 24h TTL, replay cached 2xx.</div>
+            <div style="line-height: 1.6;"><span style="color: #9ec4dd; font-weight: 600;">codex</span><span style="color: #6e6157; font-size: 10px;"> 14:04</span><br><span style="color: #f0955c;">@claude-code</span> match Stripe's 24h key reuse. Hash-only 2xx can't replay a body.</div>
+            <div style="background: #100d0b; border: 1px solid #2a231d; border-radius: 6px; padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #b09a83; white-space: pre;">$ pnpm test payments
+ PASS  replay cached 2xx
+ RUNS  race…<span style="animation: blink 1s infinite;">_</span></div>
+            <div style="margin-top: auto; border: 1px solid #3a2f26; background: #14100d; border-radius: 8px; padding: 10px 12px; color: #6e6157; display: flex; gap: 8px;"><span style="color: #f0955c;">›</span> Message war-room…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3c iris -->
+      <div id="3c" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="#3c" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #8b8ff5; border: 1px solid #2e3054; padding: 3px 9px; border-radius: 4px; background: #12132200;">3c</a>
+          <div style="color: #cbd5e1; font-size: 13px;">Iris — cool graphite · violet accent</div>
+        </div>
+        <div style="width: 470px; height: 560px; background: #14151c; border: 1px solid #262838; border-radius: 10px; overflow: hidden; display: flex; font-size: 12px; color: #c8cbd9;" data-screen-label="3c Iris colorway">
+          <div style="width: 176px; background: #101118; border-right: 1px solid #20222f; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px;">
+            <div style="padding: 4px 10px 8px; font-size: 10px; letter-spacing: 2px; color: #5d6072;">CHATS</div>
+            <div style="padding: 8px 11px; border-radius: 7px; background: #2d2f63; color: #e6e7ff; display: flex; gap: 8px; align-items: center;"><span style="color: #a5a8ff;">◉</span> war-room</div>
+            <div style="padding: 8px 11px; border-radius: 7px; color: #83879a;">SDK retry audit</div>
+            <div style="padding: 12px 10px 6px; font-size: 10px; letter-spacing: 2px; color: #5d6072;">TERMINALS</div>
+            <div style="padding: 7px 11px; color: #c8cbd9; font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; gap: 8px; align-items: center;"><span style="color: #8b8ff5;">❯_</span> cc · pnpm test<span style="margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: #8b8ff5; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 7px 11px; color: #83879a; font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; gap: 8px;"><span>❯_</span> zsh · you</div>
+            <div style="margin-top: auto; border-top: 1px solid #20222f; padding: 10px 10px 2px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="font-size: 10px; letter-spacing: 2px; color: #5d6072;">USAGE</div>
+              <div style="height: 5px; background: #20222f; border-radius: 3px;"><div style="width: 72%; height: 100%; background: #8b8ff5; border-radius: 3px;"></div></div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #83879a;">cc 5h · 72% · resets 16:40</div>
+            </div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; padding: 14px; gap: 12px;">
+            <div style="font-size: 11px; color: #83879a; border-bottom: 1px solid #20222f; padding-bottom: 9px; display: flex; gap: 8px;"><span style="color: #e6e7ff;">❖ war-room</span><span>· 3 agents</span></div>
+            <div style="line-height: 1.6;"><span style="color: #f2b08a; font-weight: 600;">claude-code</span><span style="color: #5d6072; font-size: 10px;"> 14:03</span><br>Proposal: <span style="color: #a5a8ff; font-family: 'JetBrains Mono', monospace; font-size: 11px;">idempotency_keys</span>, 24h TTL, replay cached 2xx.</div>
+            <div style="line-height: 1.6;"><span style="color: #8fd3f0; font-weight: 600;">codex</span><span style="color: #5d6072; font-size: 10px;"> 14:04</span><br><span style="color: #a5a8ff;">@claude-code</span> match Stripe's 24h key reuse. Hash-only 2xx can't replay a body.</div>
+            <div style="background: #0d0e13; border: 1px solid #20222f; border-radius: 6px; padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9aa0c0; white-space: pre;">$ pnpm test payments
+ PASS  replay cached 2xx
+ RUNS  race…<span style="animation: blink 1s infinite;">_</span></div>
+            <div style="margin-top: auto; border: 1px solid #2c2e42; background: #101118; border-radius: 8px; padding: 10px 12px; color: #5d6072; display: flex; gap: 8px;"><span style="color: #8b8ff5;">›</span> Message war-room…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3d signal -->
+      <div id="3d" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="#3d" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #4ade80; border: 1px solid #1e4230; padding: 3px 9px; border-radius: 4px; background: #0c1a12;">3d</a>
+          <div style="color: #cbd5e1; font-size: 13px;">Signal — neutral graphite · green accent</div>
+        </div>
+        <div style="width: 470px; height: 560px; background: #161616; border: 1px solid #292929; border-radius: 10px; overflow: hidden; display: flex; font-size: 12px; color: #cfcfcf;" data-screen-label="3d Signal colorway">
+          <div style="width: 176px; background: #121212; border-right: 1px solid #222; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px;">
+            <div style="padding: 4px 10px 8px; font-size: 10px; letter-spacing: 2px; color: #636363;">CHATS</div>
+            <div style="padding: 8px 11px; border-radius: 7px; background: #14532d; color: #dcfce7; display: flex; gap: 8px; align-items: center;"><span style="color: #4ade80;">◉</span> war-room</div>
+            <div style="padding: 8px 11px; border-radius: 7px; color: #8a8a8a;">SDK retry audit</div>
+            <div style="padding: 12px 10px 6px; font-size: 10px; letter-spacing: 2px; color: #636363;">TERMINALS</div>
+            <div style="padding: 7px 11px; color: #cfcfcf; font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; gap: 8px; align-items: center;"><span style="color: #4ade80;">❯_</span> cc · pnpm test<span style="margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: #4ade80; animation: pulse 1.6s infinite;"></span></div>
+            <div style="padding: 7px 11px; color: #8a8a8a; font-family: 'JetBrains Mono', monospace; font-size: 11px; display: flex; gap: 8px;"><span>❯_</span> zsh · you</div>
+            <div style="margin-top: auto; border-top: 1px solid #222; padding: 10px 10px 2px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="font-size: 10px; letter-spacing: 2px; color: #636363;">USAGE</div>
+              <div style="height: 5px; background: #222; border-radius: 3px;"><div style="width: 72%; height: 100%; background: #4ade80; border-radius: 3px;"></div></div>
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #8a8a8a;">cc 5h · 72% · resets 16:40</div>
+            </div>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; padding: 14px; gap: 12px;">
+            <div style="font-size: 11px; color: #8a8a8a; border-bottom: 1px solid #222; padding-bottom: 9px; display: flex; gap: 8px;"><span style="color: #f0f0f0;">❖ war-room</span><span>· 3 agents</span></div>
+            <div style="line-height: 1.6;"><span style="color: #e8a06a; font-weight: 600;">claude-code</span><span style="color: #636363; font-size: 10px;"> 14:03</span><br>Proposal: <span style="color: #86efac; font-family: 'JetBrains Mono', monospace; font-size: 11px;">idempotency_keys</span>, 24h TTL, replay cached 2xx.</div>
+            <div style="line-height: 1.6;"><span style="color: #7dd3fc; font-weight: 600;">codex</span><span style="color: #636363; font-size: 10px;"> 14:04</span><br><span style="color: #86efac;">@claude-code</span> match Stripe's 24h key reuse. Hash-only 2xx can't replay a body.</div>
+            <div style="background: #0e0e0e; border: 1px solid #222; border-radius: 6px; padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #9fbc9f; white-space: pre;">$ pnpm test payments
+ PASS  replay cached 2xx
+ RUNS  race…<span style="animation: blink 1s infinite;">_</span></div>
+            <div style="margin-top: auto; border: 1px solid #2e2e2e; background: #111; border-radius: 8px; padding: 10px 12px; color: #636363; display: flex; gap: 8px;"><span style="color: #4ade80;">›</span> Message war-room…</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+</x-dc>
+</body>
+</html>
