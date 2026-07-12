@@ -44,3 +44,6 @@ desktop.ini
 *.swp
 *.swo
 *~
+
+# SDD scratch
+.superpowers/
