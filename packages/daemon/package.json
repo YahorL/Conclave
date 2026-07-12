@@ -1,28 +1,23 @@
 {
-  "name": "@conclave/hub",
+  "name": "@conclave/daemon",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./src/*": "./src/*"
-  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "dev": "tsx src/main.ts"
   },
   "dependencies": {
     "@conclave/shared": "workspace:*",
-    "@fastify/websocket": "^11.3.0",
-    "better-sqlite3": "^12.11.1",
-    "fastify": "^5.10.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "tsx": "^4.23.0",
+    "ws": "^8.21.0",
     "yaml": "^2.9.0",
-    "zod": "^4.4.3"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
+    "@conclave/hub": "workspace:*",
     "@types/ws": "^8.18.1",
-    "ws": "^8.21.0"
+    "fastify": "^5.10.0"
   }
 }
