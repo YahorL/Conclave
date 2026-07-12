@@ -1,7 +1,7 @@
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } from "fastify";
 import websocket from "@fastify/websocket";
 import { z } from "zod";
-import type { Message, Thread } from "@conclave/shared";
+import type { Message, Thread, Registry } from "@conclave/shared";
 import { NewMessageSchema, NewThreadSchema } from "@conclave/shared";
 import {
   Mailbox,
@@ -13,6 +13,7 @@ import {
 export interface ServerOptions {
   mailbox: Mailbox;
   token: string;
+  registry?: Registry;
 }
 
 const VerdictBodySchema = z.object({
@@ -23,7 +24,8 @@ const VerdictBodySchema = z.object({
 const IdParamsSchema = z.object({ id: z.string().min(1) });
 
 export async function buildServer(opts: ServerOptions): Promise<FastifyInstance> {
-  const { mailbox, token } = opts;
+  const { mailbox, token, registry: registryOpt } = opts;
+  const registry: Registry = registryOpt ?? { agents: [] };
   const app = Fastify();
   await app.register(websocket);
 
@@ -97,6 +99,12 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   app.post("/api/threads/:id/close", async (req) => {
     const { id } = IdParamsSchema.parse(req.params);
     return mailbox.closeThread(id);
+  });
+
+  app.get("/api/registry", async (req) => {
+    const query = req.query as { machine?: string };
+    if (!query.machine) return registry;
+    return { agents: registry.agents.filter((a) => a.machine === query.machine) };
   });
 
   app.get("/ws", { websocket: true }, (socket) => {
