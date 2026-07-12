@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ClaudeCodeAdapter } from "../src/claude-adapter.js";
 import type { CliEvent } from "../src/stream-json.js";
 
@@ -26,6 +26,11 @@ function readCaptures(path: string): Capture[] {
 }
 
 describe("ClaudeCodeAdapter", () => {
+  afterEach(() => {
+    delete process.env["FAKE_CLAUDE_MODE"];
+    delete process.env["FAKE_CLAUDE_CAPTURE"];
+  });
+
   it("spawns with the contract flags, pipes prompt via stdin, runs in cwd", async () => {
     const cap = captureFile();
     process.env["FAKE_CLAUDE_CAPTURE"] = cap;
@@ -82,7 +87,6 @@ describe("ClaudeCodeAdapter", () => {
     await expect(
       adapter.runTurn({ cwd: process.cwd(), prompt: "x", allowedTools: [] }),
     ).rejects.toThrow(/no result event|exit/);
-    delete process.env["FAKE_CLAUDE_MODE"];
   });
 
   it("kills and rejects on timeout", async () => {
@@ -91,6 +95,17 @@ describe("ClaudeCodeAdapter", () => {
     await expect(
       adapter.runTurn({ cwd: process.cwd(), prompt: "x", allowedTools: [], timeoutMs: 500 }),
     ).rejects.toThrow(/timeout/i);
-    delete process.env["FAKE_CLAUDE_MODE"];
   }, 10_000);
+
+  it("rejects (not crashes) when the CLI dies before reading stdin", async () => {
+    process.env["FAKE_CLAUDE_MODE"] = "die-early";
+    const adapter = new ClaudeCodeAdapter(FAKE);
+    await expect(
+      adapter.runTurn({
+        cwd: process.cwd(),
+        prompt: "x".repeat(1024 * 1024), // large enough to hit EPIPE on a dead pipe
+        allowedTools: [],
+      }),
+    ).rejects.toThrow(/no result event|exit/);
+  });
 });

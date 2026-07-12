@@ -2,6 +2,12 @@
 // Emits Claude-CLI-shaped stream-json. Captures its invocation for assertions.
 import { appendFileSync, readFileSync } from "node:fs";
 
+// Must be checked before readFileSync(0) below: this mode simulates the CLI
+// dying before it ever drains stdin, so it must exit without reading it.
+if (process.env.FAKE_CLAUDE_MODE === "die-early") {
+  process.exit(1);
+}
+
 const capture = process.env.FAKE_CLAUDE_CAPTURE;
 const stdin = readFileSync(0, "utf8");
 const args = process.argv.slice(2);

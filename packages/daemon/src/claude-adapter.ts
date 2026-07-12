@@ -4,6 +4,7 @@ import type { RuntimeAdapter, TurnOptions, TurnResult } from "./adapter.js";
 import { parseStreamLine, summarizeTurn, type CliEvent } from "./stream-json.js";
 
 const DEFAULT_TIMEOUT_MS = 600_000;
+const STDERR_LIMIT = 8192;
 
 export class ClaudeCodeAdapter implements RuntimeAdapter {
   constructor(private readonly bin = "claude") {}
@@ -50,6 +51,7 @@ export class ClaudeCodeAdapter implements RuntimeAdapter {
       child.on("error", (err) => fail(new Error(`failed to spawn ${this.bin}: ${err.message}`)));
       child.stderr.on("data", (chunk: Buffer) => {
         stderr += chunk.toString();
+        if (stderr.length > STDERR_LIMIT) stderr = stderr.slice(-STDERR_LIMIT);
       });
 
       const lines = createInterface({ input: child.stdout });
@@ -73,6 +75,9 @@ export class ClaudeCodeAdapter implements RuntimeAdapter {
         }
       });
 
+      // EPIPE when the child dies early must not crash the process; the
+      // close handler above settles the turn correctly for every death mode.
+      child.stdin.on("error", () => {});
       child.stdin.write(opts.prompt);
       child.stdin.end();
     });
