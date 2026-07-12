@@ -42,8 +42,9 @@ Single user, personal infrastructure. The UI implements the Conclave design hand
 (machine A) (machine B)  browser/Tauri   browser/PWA
    │           │
  spawn headless CLI sessions (cwd = workspace folder)
+ spawn PTYs: plain shells + interactive agent TUIs
  local MCP server bridging sessions → hub
- file RPCs (opt-in, on-machine consent)
+ file & terminal RPCs (opt-in, on-machine consent)
 ```
 
 - **Hub** runs in a Docker container; stateless except one mounted volume for SQLite + artifact blobs. Never touches project folders.
@@ -120,15 +121,29 @@ Covers PR reviews and free-form decision discussions.
 
 - **Workspace = (machine, folderPath).** Creation flow: pick machine → browse its filesystem via the daemon → select folder.
 - Daemon file RPCs, tunneled through the hub: `listDir`, `readFile`, `writeFile`, `stat`.
-- **Default deny + on-machine consent.** Daemons ship with file RPCs disabled. Enabling requires an action on the machine itself (`conclaved grant files --workspace <path>`, or local config edit). Grants are per-machine and per-scope: specific workspace roots, or a time-limited machine-wide grant for the browse-and-pick flow. The hub cannot grant itself access; UI shows "file access: not granted on this machine" until granted. A compromised hub or stolen client token cannot read arbitrary files.
+- **Default deny + on-machine consent.** Daemons ship with all sensitive capabilities disabled. Enabling requires an action on the machine itself (`conclaved grant <capability>`, or local config edit). Capabilities: `files` (file RPCs, per workspace root or time-limited machine-wide for browse-and-pick) and `terminals` (PTY spawning, §8a). The hub cannot grant itself access; UI shows "not granted on this machine" until granted. A compromised hub or stolen client token cannot read files or open shells on your machines.
 - Outside the browse flow, RPCs are path-jailed to granted workspace roots.
 - Web app: per-workspace file tree, single-file viewer/editor (CodeMirror, syntax highlighting), save writes back through the daemon. Not an IDE: no LSP, no cross-file search at launch. File links in chat (`path/file.ts:41`) open here.
 - Edits are user actions — no approval gate, but every write is logged as a status message in the workspace thread.
 
+## 8a. Interactive terminals (PTYs)
+
+Terminals are first-class sessions, per the design handoff. Two kinds, both real PTYs spawned by the daemon (node-pty):
+
+- **Plain shells** — the user's login shell (`zsh · you`) in any granted workspace folder (or `$HOME` with a machine-wide grant). Fully interactive from any client.
+- **Interactive agent TUIs** — `claude` / `codex` launched in their full TUI in a workspace folder, when the user wants a hands-on session instead of an orchestrated headless one. These are user-driven sessions and are not managed by the orchestrator (no rounds/verdicts); they appear in the TERMINALS sidebar section with the owning agent's color.
+
+Mechanics:
+
+- PTY I/O streams as binary frames over the existing WebSocket protocol, hub-relayed (hub never interprets terminal bytes, only routes them). Client renders with xterm.js; resize events propagate.
+- Requires the `terminals` grant on the machine (§8) — default deny, on-machine consent only.
+- Orchestrated (headless) agent sessions keep their read-only stream rendering; the "take over" affordance on a headless session opens a new interactive TUI resumed from the same session id (`claude --resume <id>`), rather than hijacking the running process.
+- Scrollback is buffered by the daemon (ring buffer, ~10k lines) so reconnecting clients replay recent output; terminals survive client disconnects and are re-attachable, tmux-style.
+
 ## 9. Web app & Tauri shell
 
 - React + Vite. Implements the handoff pixel-faithfully: Black (default) + Teal themes as CSS-variable token sets, IBM Plex Sans / JetBrains Mono, five regions (window tab strip, sidebar, session tabs, group chat, status strip). Mobile: chat-first, drawers for sidebar/status.
-- "Terminals" are **read-only streams** of headless session output (stream-json rendered log). Interactive PTYs are future work; the design's "take over" affordance maps to sending a message / opening an approval.
+- Terminal sessions render in xterm.js: interactive PTYs (shells + agent TUIs, §8a) are fully usable from laptop and phone; orchestrated headless sessions render as read-only streams with a "take over" affordance (§8a).
 - One WebSocket protocol for daemons and clients (role-differentiated). Web push for: approval requests, thread settled, task failed, usage threshold crossed.
 - Tauri: webview onto the hub URL, tray + native notifications. Nothing else Tauri-specific at launch.
 
@@ -154,13 +169,13 @@ Each step independently usable:
 4. Web app MVP: chat, threads, status (Black theme).
 5. Multi-machine: Docker packaging (hub), systemd packaging (daemon), artifacts, delegation tasks, workspace browse-and-pick with on-machine grants.
 6. ACLs + approvals + web push.
-7. UI completion: terminals view, usage meters, file viewer/editor, Teal theme, mobile layout, Tauri shell.
+7. Interactive terminals: PTY service in daemon, `terminals` grant, xterm.js sessions (shells + agent TUIs), take-over flow.
+8. UI completion: usage meters, file viewer/editor, Teal theme, mobile layout, Tauri shell.
 
 ## 13. Out of scope (explicit)
 
 - API-key usage of any model provider.
 - Full A2A protocol adoption (data model mirrored only).
-- Interactive PTY terminals in the UI.
 - LSP / cross-file search / IDE features in the file viewer.
 - Artifacts > ~50 MB.
 - Multi-user auth, tenancy, or public exposure.
