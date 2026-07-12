@@ -6,6 +6,7 @@ dist/
 build/
 out/
 target/
+packages/hub/data/
 
 # Environment & secrets
 .env
