@@ -140,3 +140,55 @@ describe("HTTP API", () => {
     expect(res.statusCode).toBe(200);
   });
 });
+
+describe("long-poll", () => {
+  let app: FastifyInstance;
+  let mailbox: Mailbox;
+
+  beforeEach(async () => {
+    ({ app, mailbox } = await freshServer());
+  });
+
+  it("parks until a message arrives", async () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    const pending = app.inject({
+      method: "GET",
+      url: `/api/threads/${t.id}/messages?after=0&wait=5`,
+      headers: AUTH,
+    });
+    setTimeout(() => {
+      mailbox.appendMessage(t.id, {
+        from: "you", to: [], type: "text", body: "late arrival", artifacts: [],
+      });
+    }, 50);
+    const res = await pending;
+    expect(res.json<Message[]>().map((m) => m.body)).toEqual(["late arrival"]);
+  });
+
+  it("returns empty after timeout", async () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    const started = Date.now();
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/threads/${t.id}/messages?after=0&wait=1`,
+      headers: AUTH,
+    });
+    expect(Date.now() - started).toBeGreaterThanOrEqual(900);
+    expect(res.json<Message[]>()).toEqual([]);
+  });
+
+  it("returns immediately when messages already exist", async () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    mailbox.appendMessage(t.id, {
+      from: "you", to: [], type: "text", body: "already here", artifacts: [],
+    });
+    const started = Date.now();
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/threads/${t.id}/messages?after=0&wait=5`,
+      headers: AUTH,
+    });
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(res.json<Message[]>()).toHaveLength(1);
+  });
+});

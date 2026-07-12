@@ -1,7 +1,7 @@
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } from "fastify";
 import websocket from "@fastify/websocket";
 import { z } from "zod";
-import { NewMessageSchema, NewThreadSchema } from "@conclave/shared";
+import { type Message, NewMessageSchema, NewThreadSchema } from "@conclave/shared";
 import {
   Mailbox,
   NotAParticipantError,
@@ -72,9 +72,18 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   app.get("/api/threads/:id/messages", async (req, reply) => {
     const { id } = IdParamsSchema.parse(req.params);
     if (!mailbox.getThread(id)) return reply.code(404).send({ error: `thread not found: ${id}` });
-    const query = req.query as { after?: string };
-    const after = Number(query.after ?? 0);
-    return mailbox.listMessages(id, Number.isFinite(after) ? after : 0);
+    const query = req.query as { after?: string; wait?: string };
+    const afterRaw = Number(query.after ?? 0);
+    const after = Number.isFinite(afterRaw) ? afterRaw : 0;
+    const waitRaw = Number(query.wait ?? 0);
+    const waitMs = Math.min(Number.isFinite(waitRaw) ? waitRaw : 0, 60) * 1000;
+
+    let messages = mailbox.listMessages(id, after);
+    if (messages.length === 0 && waitMs > 0) {
+      await waitForThreadMessage(mailbox, id, waitMs);
+      messages = mailbox.listMessages(id, after);
+    }
+    return messages;
   });
 
   app.post("/api/threads/:id/verdict", async (req, reply) => {
@@ -103,4 +112,23 @@ function parseOr400<T>(
     return undefined;
   }
   return result.data;
+}
+
+function waitForThreadMessage(
+  mailbox: Mailbox,
+  threadId: string,
+  timeoutMs: number,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(done, timeoutMs);
+    function onMessage(message: Message): void {
+      if (message.threadId === threadId) done();
+    }
+    function done(): void {
+      clearTimeout(timer);
+      mailbox.events.off("message", onMessage);
+      resolve();
+    }
+    mailbox.events.on("message", onMessage);
+  });
 }
