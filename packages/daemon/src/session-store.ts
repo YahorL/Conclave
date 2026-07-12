@@ -16,12 +16,16 @@ export class SessionStore {
     }
   }
 
+  private key(threadId: string, agentId: string): string {
+    return JSON.stringify([threadId, agentId]);
+  }
+
   get(threadId: string, agentId: string): string | undefined {
-    return this.sessions[`${threadId}::${agentId}`];
+    return this.sessions[this.key(threadId, agentId)];
   }
 
   set(threadId: string, agentId: string, sessionId: string): void {
-    this.sessions[`${threadId}::${agentId}`] = sessionId;
+    this.sessions[this.key(threadId, agentId)] = sessionId;
     writeFileSync(this.filePath, JSON.stringify(this.sessions, null, 2));
   }
 }

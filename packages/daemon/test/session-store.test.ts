@@ -28,4 +28,12 @@ describe("SessionStore", () => {
     store.set("t", "a", "s");
     expect(new SessionStore(path).get("t", "a")).toBe("s");
   });
+
+  it("does not alias keys when ids contain the delimiter", () => {
+    const store = new SessionStore(tmpPath());
+    store.set("a", "b::c", "sess-1");
+    store.set("a::b", "c", "sess-2");
+    expect(store.get("a", "b::c")).toBe("sess-1");
+    expect(store.get("a::b", "c")).toBe("sess-2");
+  });
 });
