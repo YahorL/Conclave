@@ -1,6 +1,40 @@
 .strip {
   height: 44px;
   flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0 12px;
   background: var(--chrome);
   border-bottom: 1px solid var(--border);
+}
+.tabActive {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  color: var(--text-primary);
+  font-size: 12.5px;
+}
+.close {
+  color: var(--text-muted);
+}
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  padding-bottom: 8px;
+}
+.icon {
+  color: var(--text-muted);
+}
+.spend {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #e5e5e5;
 }

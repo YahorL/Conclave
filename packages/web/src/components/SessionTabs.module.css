@@ -6,3 +6,23 @@
   padding: 0 8px;
   min-height: 37px;
 }
+.tab,
+.tabActive {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  border-top: 2px solid transparent;
+}
+.tab {
+  color: var(--text-secondary-2);
+}
+.tabActive {
+  color: var(--text-primary);
+  background: var(--surface);
+  border-top-color: var(--sel-bg);
+}
+.glyph {
+  color: var(--text-secondary);
+}

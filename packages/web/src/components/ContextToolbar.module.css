@@ -8,3 +8,12 @@
   background: var(--surface);
   border-bottom: 1px solid var(--hairline);
 }
+.sep {
+  color: var(--text-muted);
+}
+.state {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
