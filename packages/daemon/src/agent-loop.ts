@@ -2,8 +2,8 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { AgentConfig, Message } from "@conclave/shared";
 import type { RuntimeAdapter } from "./adapter.js";
+import type { DaemonState } from "./daemon-state.js";
 import type { HubClient } from "./hub-client.js";
-import type { SessionStore } from "./session-store.js";
 import type { TurnQueue } from "./turn-queue.js";
 
 const require = createRequire(import.meta.url);
@@ -50,7 +50,7 @@ export interface AgentLoopOptions {
   agents: AgentConfig[];
   hub: HubClient;
   adapter: RuntimeAdapter;
-  store: SessionStore;
+  state: DaemonState;
   queue: TurnQueue;
   hubUrl: string;
   token: string;
@@ -58,20 +58,30 @@ export interface AgentLoopOptions {
   bridgeCommand?: { command: string; args: string[] };
 }
 
+export async function runCatchUp(
+  hub: HubClient,
+  state: DaemonState,
+  handle: (m: Message) => void,
+): Promise<number> {
+  let total = 0;
+  for (;;) {
+    const page = await hub.listAllMessages(state.getCursor(), 500);
+    for (const m of page) handle(m);
+    total += page.length;
+    if (page.length < 500) return total;
+  }
+}
+
 export class AgentLoop {
   private readonly inFlight = new Set<Promise<void>>();
-  // Guards against re-triggering on a message already dispatched to an agent
-  // (e.g. a reconnecting HubSocket redelivering messages it has seen before).
-  private readonly dispatched = new Set<string>();
 
   constructor(private readonly opts: AgentLoopOptions) {}
 
   handleMessage(m: Message): void {
+    if (m.id <= this.opts.state.getCursor()) return;
+    this.opts.state.setCursor(m.id);
     for (const agent of this.opts.agents) {
       if (!shouldTrigger(agent, m, this.opts.allowAgentTriggers)) continue;
-      const key = `${m.id}:${agent.id}`;
-      if (this.dispatched.has(key)) continue;
-      this.dispatched.add(key);
       const turn = this.opts.queue
         .run(agent.id, () => this.runTurn(agent, m))
         .catch(() => undefined);
@@ -87,10 +97,10 @@ export class AgentLoop {
   }
 
   private async runTurn(agent: AgentConfig, m: Message): Promise<void> {
-    const { hub, store, hubUrl, token } = this.opts;
+    const { hub, state, hubUrl, token } = this.opts;
     const bridge = this.opts.bridgeCommand ?? DEFAULT_BRIDGE;
     try {
-      const sessionId = store.get(m.threadId, agent.id);
+      const sessionId = state.getSession(m.threadId, agent.id);
       const result = await this.opts.adapter.runTurn({
         cwd: agent.workspace,
         prompt: buildTurnPrompt(agent, m, sessionId === undefined),
@@ -109,7 +119,7 @@ export class AgentLoop {
           },
         },
       });
-      if (result.sessionId) store.set(m.threadId, agent.id, result.sessionId);
+      if (result.sessionId) state.setSession(m.threadId, agent.id, result.sessionId);
       if (result.text.trim()) {
         await hub.postMessage(m.threadId, {
           from: agent.id, to: [m.from], type: "text", body: result.text, artifacts: [],

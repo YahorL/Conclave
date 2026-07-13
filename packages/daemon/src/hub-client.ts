@@ -42,6 +42,10 @@ export class HubClient {
     return this.request("POST", `/api/threads/${threadId}/messages`, msg);
   }
 
+  listAllMessages(after = 0, limit = 500): Promise<Message[]> {
+    return this.request("GET", `/api/messages?after=${after}&limit=${limit}`);
+  }
+
   listMessages(threadId: string, after = 0, waitSec = 0): Promise<Message[]> {
     return this.request(
       "GET",

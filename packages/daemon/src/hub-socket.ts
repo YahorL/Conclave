@@ -4,6 +4,7 @@ import { MessageSchema, type Message } from "@conclave/shared";
 export interface HubSocketOptions {
   hubUrl: string;
   token: string;
+  onOpen?: () => void | Promise<void>;
   onMessage: (m: Message) => void;
   reconnectDelayMs?: number;
 }
@@ -47,7 +48,12 @@ export class HubSocket {
     const ws = new WebSocket(wsUrl);
     this.ws = ws;
 
-    ws.on("message", (data) => {
+    // While onOpen runs (e.g. a catch-up scan), buffer live frames so they are
+    // delivered after catch-up completes, in arrival order.
+    let buffering = this.opts.onOpen !== undefined;
+    const buffer: Array<Buffer | string> = [];
+
+    const handleData = (data: Buffer | string): void => {
       try {
         const frame: unknown = JSON.parse(String(data));
         const candidate = (frame as { type?: unknown; message?: unknown });
@@ -57,6 +63,24 @@ export class HubSocket {
       } catch {
         // ignore unparseable frames
       }
+    };
+
+    ws.on("message", (data: Buffer) => {
+      if (buffering) buffer.push(data);
+      else handleData(data);
+    });
+
+    ws.on("open", () => {
+      if (!this.opts.onOpen) return;
+      void Promise.resolve()
+        .then(() => this.opts.onOpen!())
+        .catch((err: unknown) => {
+          console.error("onOpen failed:", err instanceof Error ? err.message : err);
+        })
+        .finally(() => {
+          buffering = false;
+          for (const data of buffer.splice(0)) handleData(data);
+        });
     });
 
     const scheduleReconnect = (): void => {

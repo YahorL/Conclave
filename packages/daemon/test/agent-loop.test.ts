@@ -9,7 +9,7 @@ import { openDb } from "@conclave/hub/src/db.js";
 import { Mailbox } from "@conclave/hub/src/mailbox.js";
 import { buildServer } from "@conclave/hub/src/server.js";
 import { HubClient } from "../src/hub-client.js";
-import { SessionStore } from "../src/session-store.js";
+import { DaemonState } from "../src/daemon-state.js";
 import { TurnQueue } from "../src/turn-queue.js";
 import type { RuntimeAdapter, TurnOptions, TurnResult } from "../src/adapter.js";
 import {
@@ -94,7 +94,7 @@ describe("AgentLoop end-to-end (live hub, fake adapter)", () => {
       agents: [AGENT],
       hub: new HubClient(hubUrl, TOKEN),
       adapter,
-      store: new SessionStore(join(dir, "state.json")),
+      state: new DaemonState(join(dir, "state.json")),
       queue: new TurnQueue(),
       hubUrl,
       token: TOKEN,

@@ -1,10 +1,10 @@
 import { loadDaemonConfig } from "./config.js";
 import { HubClient } from "./hub-client.js";
 import { HubSocket } from "./hub-socket.js";
-import { SessionStore } from "./session-store.js";
+import { DaemonState } from "./daemon-state.js";
 import { TurnQueue } from "./turn-queue.js";
 import { ClaudeCodeAdapter } from "./claude-adapter.js";
-import { AgentLoop } from "./agent-loop.js";
+import { AgentLoop, runCatchUp } from "./agent-loop.js";
 
 async function main(): Promise<void> {
   const cfg = loadDaemonConfig(process.env);
@@ -18,11 +18,12 @@ async function main(): Promise<void> {
   }
   for (const a of agents) console.log(`agent ${a.id} → ${a.workspace}`);
 
+  const state = new DaemonState(cfg.stateFile);
   const loop = new AgentLoop({
     agents,
     hub,
     adapter: new ClaudeCodeAdapter(cfg.claudeBin),
-    store: new SessionStore(cfg.stateFile),
+    state,
     queue: new TurnQueue(),
     hubUrl: cfg.hubUrl,
     token: cfg.token,
@@ -32,6 +33,10 @@ async function main(): Promise<void> {
   const socket = new HubSocket({
     hubUrl: cfg.hubUrl,
     token: cfg.token,
+    onOpen: async () => {
+      const caught = await runCatchUp(hub, state, (m) => loop.handleMessage(m));
+      if (caught > 0) console.log(`catch-up: processed ${caught} message(s)`);
+    },
     onMessage: (m) => {
       loop.handleMessage(m);
     },
