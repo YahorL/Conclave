@@ -4,6 +4,8 @@ import type {
   Message,
   NewMessage,
   Registry,
+  Task,
+  TaskState,
   Thread,
   UsageReport,
 } from "@conclave/shared";
@@ -71,5 +73,16 @@ export class HubClient {
 
   async postStatus(report: AgentStatusReport): Promise<void> {
     await this.request("POST", "/api/status", report);
+  }
+
+  listTasks(assignee: string, state: TaskState): Promise<Task[]> {
+    return this.request(
+      "GET",
+      `/api/tasks?assignee=${encodeURIComponent(assignee)}&state=${encodeURIComponent(state)}`,
+    );
+  }
+
+  async setTaskState(id: string, state: TaskState): Promise<void> {
+    await this.request("POST", `/api/tasks/${id}/state`, { state });
   }
 }

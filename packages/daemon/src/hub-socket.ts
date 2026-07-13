@@ -1,8 +1,10 @@
 import WebSocket from "ws";
 import {
   MessageSchema,
+  TaskSchema,
   TurnRequestSchema,
   type Message,
+  type Task,
   type TurnRequest,
 } from "@conclave/shared";
 
@@ -12,6 +14,7 @@ export interface HubSocketOptions {
   onOpen?: () => void | Promise<void>;
   onMessage: (m: Message) => void;
   onTurn?: (turn: TurnRequest) => void;
+  onTask?: (task: Task) => void;
   reconnectDelayMs?: number;
 }
 
@@ -71,6 +74,11 @@ export class HubSocket {
         if (candidate.type === "turn" && this.opts.onTurn) {
           const parsedTurn = TurnRequestSchema.safeParse(candidate.turn);
           if (parsedTurn.success) this.opts.onTurn(parsedTurn.data);
+          return;
+        }
+        if (candidate.type === "task" && this.opts.onTask) {
+          const parsedTask = TaskSchema.safeParse((candidate as { task?: unknown }).task);
+          if (parsedTask.success) this.opts.onTask(parsedTask.data);
           return;
         }
       } catch {
