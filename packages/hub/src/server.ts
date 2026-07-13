@@ -2,9 +2,10 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } f
 import websocket from "@fastify/websocket";
 import { z } from "zod";
 import type Database from "better-sqlite3";
-import type { AgentStatus, Message, Task, Thread, TurnRequest, Registry } from "@conclave/shared";
+import type { AgentStatus, Artifact, Message, Task, Thread, TurnRequest, Registry } from "@conclave/shared";
 import {
   AgentStatusReportSchema,
+  NewArtifactSchema,
   NewDebateSchema,
   NewMessageSchema,
   NewTaskSchema,
@@ -22,6 +23,7 @@ import { getUsageSummary, listUsage, recordUsage } from "./usage.js";
 import type { DebateOrchestrator } from "./orchestrator.js";
 import type { AgentStatusStore } from "./status.js";
 import { TaskStore, createTask, InvalidTransitionError, UnknownAssigneeError } from "./tasks.js";
+import { ArtifactStore, ArtifactTooLargeError } from "./artifacts.js";
 
 export interface ServerOptions {
   mailbox: Mailbox;
@@ -32,6 +34,7 @@ export interface ServerOptions {
   status?: AgentStatusStore;
   budgetUsd?: number;
   tasks?: TaskStore;
+  artifacts?: ArtifactStore;
 }
 
 const VerdictBodySchema = z.object({
@@ -61,6 +64,7 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     if (err instanceof NotAParticipantError) return reply.code(403).send({ error: err.message });
     if (err instanceof UnknownAssigneeError) return reply.code(400).send({ error: err.message });
     if (err instanceof InvalidTransitionError) return reply.code(409).send({ error: err.message });
+    if (err instanceof ArtifactTooLargeError) return reply.code(413).send({ error: err.message });
     if (err instanceof z.ZodError) return reply.code(400).send({ error: "invalid request" });
     if (typeof err.statusCode === "number" && err.statusCode < 500) {
       return reply.code(err.statusCode).send({ error: err.message });
@@ -214,6 +218,40 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     return task;
   });
 
+  app.post("/api/artifacts", async (req, reply) => {
+    if (!opts.artifacts) return reply.code(503).send({ error: "artifacts store not configured" });
+    const body = parseOr400(NewArtifactSchema, req.body, reply);
+    if (!body) return;
+    const artifact = opts.artifacts.create(body);
+    mailbox.events.emit("artifact", artifact);
+    return reply.code(201).send(artifact);
+  });
+
+  app.get("/api/artifacts", async (_req, reply) => {
+    if (!opts.artifacts) return reply.code(503).send({ error: "artifacts store not configured" });
+    return opts.artifacts.list();
+  });
+
+  app.get("/api/artifacts/:id", async (req, reply) => {
+    if (!opts.artifacts) return reply.code(503).send({ error: "artifacts store not configured" });
+    const { id } = IdParamsSchema.parse(req.params);
+    const art = opts.artifacts.get(id);
+    if (!art) return reply.code(404).send({ error: `artifact not found: ${id}` });
+    return art;
+  });
+
+  app.get("/api/artifacts/:id/blob", async (req, reply) => {
+    if (!opts.artifacts) return reply.code(503).send({ error: "artifacts store not configured" });
+    const { id } = IdParamsSchema.parse(req.params);
+    const art = opts.artifacts.get(id);
+    const blob = opts.artifacts.getBlob(id);
+    if (!art || !blob) return reply.code(404).send({ error: `artifact not found: ${id}` });
+    return reply
+      .header("content-type", art.mime)
+      .header("content-disposition", `inline; filename="${art.name}"`)
+      .send(blob);
+  });
+
   app.get("/ws", { websocket: true }, (socket) => {
     const onMessage = (message: Message): void => {
       socket.send(JSON.stringify({ type: "message", message }));
@@ -230,16 +268,21 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const onTask = (task: Task): void => {
       socket.send(JSON.stringify({ type: "task", task }));
     };
+    const onArtifact = (artifact: Artifact): void => {
+      socket.send(JSON.stringify({ type: "artifact", artifact }));
+    };
     mailbox.events.on("message", onMessage);
     mailbox.events.on("thread", onThread);
     mailbox.events.on("turn", onTurn);
     mailbox.events.on("task", onTask);
+    mailbox.events.on("artifact", onArtifact);
     if (opts.status) opts.status.events.on("agent-status", onStatus);
     socket.on("close", () => {
       mailbox.events.off("message", onMessage);
       mailbox.events.off("thread", onThread);
       mailbox.events.off("turn", onTurn);
       mailbox.events.off("task", onTask);
+      mailbox.events.off("artifact", onArtifact);
       if (opts.status) opts.status.events.off("agent-status", onStatus);
     });
   });
