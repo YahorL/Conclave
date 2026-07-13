@@ -1,0 +1,124 @@
+import { fileURLToPath } from "node:url";
+import type { AgentConfig, Message } from "@conclave/shared";
+import type { RuntimeAdapter } from "./adapter.js";
+import type { HubClient } from "./hub-client.js";
+import type { SessionStore } from "./session-store.js";
+import type { TurnQueue } from "./turn-queue.js";
+
+export const HUB_MCP_TOOLS = [
+  "mcp__hub__send_message",
+  "mcp__hub__check_inbox",
+  "mcp__hub__wait_for_reply",
+  "mcp__hub__end_thread",
+];
+
+const DEFAULT_BRIDGE = {
+  command: "npx",
+  args: ["tsx", fileURLToPath(new URL("./mcp-bridge.ts", import.meta.url))],
+};
+
+export function shouldTrigger(
+  agent: AgentConfig,
+  m: Message,
+  allowAgentTriggers: boolean,
+): boolean {
+  if (!m.to.includes(agent.id)) return false;
+  if (m.from === agent.id) return false;
+  if (m.type !== "text" && m.type !== "proposal") return false;
+  if (m.from !== "you" && !allowAgentTriggers) return false;
+  return true;
+}
+
+export function buildTurnPrompt(agent: AgentConfig, m: Message, isFirstTurn: boolean): string {
+  if (!isFirstTurn) return `[${m.from}]: ${m.body}`;
+  const role = agent.role ? `${agent.role}\n\n` : "";
+  return (
+    `${role}You are agent "${agent.id}" in Conclave thread ${m.threadId}. ` +
+    `Hub MCP tools are available: send_message, check_inbox, wait_for_reply, end_thread. ` +
+    `Your final response text is posted to the thread automatically — use send_message only ` +
+    `for additional mid-turn messages.\n\n[${m.from}]: ${m.body}`
+  );
+}
+
+export interface AgentLoopOptions {
+  agents: AgentConfig[];
+  hub: HubClient;
+  adapter: RuntimeAdapter;
+  store: SessionStore;
+  queue: TurnQueue;
+  hubUrl: string;
+  token: string;
+  allowAgentTriggers: boolean;
+  bridgeCommand?: { command: string; args: string[] };
+}
+
+export class AgentLoop {
+  private readonly inFlight = new Set<Promise<void>>();
+  // Guards against re-triggering on a message already dispatched to an agent
+  // (e.g. a reconnecting HubSocket redelivering messages it has seen before).
+  private readonly dispatched = new Set<string>();
+
+  constructor(private readonly opts: AgentLoopOptions) {}
+
+  handleMessage(m: Message): void {
+    for (const agent of this.opts.agents) {
+      if (!shouldTrigger(agent, m, this.opts.allowAgentTriggers)) continue;
+      const key = `${m.id}:${agent.id}`;
+      if (this.dispatched.has(key)) continue;
+      this.dispatched.add(key);
+      const turn = this.opts.queue
+        .run(agent.id, () => this.runTurn(agent, m))
+        .catch(() => undefined);
+      this.inFlight.add(turn);
+      void turn.finally(() => this.inFlight.delete(turn));
+    }
+  }
+
+  async idle(): Promise<void> {
+    while (this.inFlight.size > 0) {
+      await Promise.all([...this.inFlight]);
+    }
+  }
+
+  private async runTurn(agent: AgentConfig, m: Message): Promise<void> {
+    const { hub, store, hubUrl, token } = this.opts;
+    const bridge = this.opts.bridgeCommand ?? DEFAULT_BRIDGE;
+    try {
+      const sessionId = store.get(m.threadId, agent.id);
+      const result = await this.opts.adapter.runTurn({
+        cwd: agent.workspace,
+        prompt: buildTurnPrompt(agent, m, sessionId === undefined),
+        sessionId,
+        allowedTools: [...agent.allowedTools, ...HUB_MCP_TOOLS],
+        mcpServers: {
+          hub: {
+            command: bridge.command,
+            args: bridge.args,
+            env: {
+              CONCLAVE_HUB_URL: hubUrl,
+              CONCLAVE_TOKEN: token,
+              CONCLAVE_THREAD_ID: m.threadId,
+              CONCLAVE_AGENT_ID: agent.id,
+            },
+          },
+        },
+      });
+      if (result.sessionId) store.set(m.threadId, agent.id, result.sessionId);
+      if (result.text.trim()) {
+        await hub.postMessage(m.threadId, {
+          from: agent.id, to: [m.from], type: "text", body: result.text, artifacts: [],
+        });
+      }
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      try {
+        await hub.postMessage(m.threadId, {
+          from: agent.id, to: [], type: "status",
+          body: `agent ${agent.id} turn failed: ${reason}`, artifacts: [],
+        });
+      } catch {
+        // hub unreachable — nothing more we can do from here
+      }
+    }
+  }
+}
