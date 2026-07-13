@@ -1,5 +1,6 @@
 import type {
   AgentConfig,
+  AgentStatusReport,
   Message,
   NewMessage,
   Registry,
@@ -66,5 +67,9 @@ export class HubClient {
 
   async postUsage(report: UsageReport): Promise<void> {
     await this.request("POST", "/api/usage", report);
+  }
+
+  async postStatus(report: AgentStatusReport): Promise<void> {
+    await this.request("POST", "/api/status", report);
   }
 }

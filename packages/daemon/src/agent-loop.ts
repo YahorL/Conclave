@@ -23,6 +23,14 @@ const DEFAULT_BRIDGE = {
   ],
 };
 
+const RATE_LIMIT_RE = /rate.?limit|usage limit|too many requests|429/i;
+
+export function parseResetTime(text: string): string | undefined {
+  const iso = text.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/);
+  if (iso) return iso[0];
+  return undefined;
+}
+
 export function shouldTrigger(
   agent: AgentConfig,
   m: Message,
@@ -182,7 +190,7 @@ export class AgentLoop {
       }
     }
     if (result.isError) {
-      const rateLimited = /rate.?limit|usage limit|too many requests|429/i.test(result.text);
+      const rateLimited = RATE_LIMIT_RE.test(result.text);
       const label = rateLimited ? "rate-limited" : "error";
       try {
         await this.opts.hub.postMessage(threadId, {
@@ -201,12 +209,42 @@ export class AgentLoop {
     }
   }
 
+  private async reportStatus(
+    agent: AgentConfig,
+    status: "running" | "blocked" | "idle",
+    activity: string,
+    threadId: string,
+    resetsAt?: string,
+  ): Promise<void> {
+    try {
+      await this.opts.hub.postStatus({ agent: agent.id, status, activity, threadId, resetsAt });
+    } catch (e) {
+      console.error(
+        `agent ${agent.id}: failed to post status:`,
+        e instanceof Error ? e.message : e,
+      );
+    }
+  }
+
+  private async reportTurnStatus(
+    agent: AgentConfig,
+    threadId: string,
+    result: TurnResult,
+  ): Promise<void> {
+    if (result.isError && RATE_LIMIT_RE.test(result.text)) {
+      await this.reportStatus(agent, "blocked", "rate-limited", threadId, parseResetTime(result.text));
+    } else {
+      await this.reportStatus(agent, "idle", "", threadId);
+    }
+  }
+
   private async runTurn(agent: AgentConfig, m: Message): Promise<void> {
     const { hub, state } = this.opts;
     try {
       const adapter = this.opts.adapters[agent.runtime];
       if (!adapter) throw new Error(`no adapter for runtime ${agent.runtime}`);
       const sessionId = state.getSession(m.threadId, agent.id);
+      await this.reportStatus(agent, "running", `replying in thread ${m.threadId}`, m.threadId);
       const result = await adapter.runTurn({
         cwd: agent.workspace,
         prompt: buildTurnPrompt(agent, m, sessionId === undefined),
@@ -216,6 +254,7 @@ export class AgentLoop {
       });
       if (result.sessionId) state.setSession(m.threadId, agent.id, result.sessionId);
       await this.reportTurn(agent, m.threadId, result);
+      await this.reportTurnStatus(agent, m.threadId, result);
       if (!result.isError && result.text.trim()) {
         await hub.postMessage(m.threadId, {
           from: agent.id, to: [m.from], type: "text", body: result.text, artifacts: [],
@@ -223,6 +262,7 @@ export class AgentLoop {
       }
     } catch (e) {
       await this.postFailure(agent, m.threadId, e);
+      await this.reportStatus(agent, "idle", "", m.threadId);
     }
   }
 
@@ -236,6 +276,7 @@ export class AgentLoop {
       const adapter = this.opts.adapters[agent.runtime];
       if (!adapter) throw new Error(`no adapter for runtime ${agent.runtime}`);
       const sessionId = state.getSession(turn.threadId, agent.id);
+      await this.reportStatus(agent, "running", `debating in thread ${turn.threadId}`, turn.threadId);
       const result = await adapter.runTurn({
         cwd: agent.workspace,
         prompt: buildDebatePrompt(agent, turn, messages, sessionId === undefined),
@@ -247,6 +288,7 @@ export class AgentLoop {
       if (maxSeen !== undefined) state.setWatermark(turn.threadId, agent.id, maxSeen);
       if (result.sessionId) state.setSession(turn.threadId, agent.id, result.sessionId);
       await this.reportTurn(agent, turn.threadId, result);
+      await this.reportTurnStatus(agent, turn.threadId, result);
       if (!result.isError && result.text.trim()) {
         await hub.postMessage(turn.threadId, {
           from: agent.id, to: [], type: "text", body: result.text, artifacts: [],
@@ -254,6 +296,7 @@ export class AgentLoop {
       }
     } catch (e) {
       await this.postFailure(agent, turn.threadId, e);
+      await this.reportStatus(agent, "idle", "", turn.threadId);
     }
   }
 }
