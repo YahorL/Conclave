@@ -2,7 +2,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } f
 import websocket from "@fastify/websocket";
 import { z } from "zod";
 import type Database from "better-sqlite3";
-import type { Message, Thread, Registry } from "@conclave/shared";
+import type { Message, Thread, TurnRequest, Registry } from "@conclave/shared";
 import { NewMessageSchema, NewThreadSchema, UsageReportSchema } from "@conclave/shared";
 import {
   Mailbox,
@@ -140,11 +140,16 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const onThread = (thread: Thread): void => {
       socket.send(JSON.stringify({ type: "thread", thread }));
     };
+    const onTurn = (turn: TurnRequest): void => {
+      socket.send(JSON.stringify({ type: "turn", turn }));
+    };
     mailbox.events.on("message", onMessage);
     mailbox.events.on("thread", onThread);
+    mailbox.events.on("turn", onTurn);
     socket.on("close", () => {
       mailbox.events.off("message", onMessage);
       mailbox.events.off("thread", onThread);
+      mailbox.events.off("turn", onTurn);
     });
   });
 

@@ -70,4 +70,26 @@ describe("WebSocket push", () => {
       }),
     );
   });
+
+  it("forwards turn events as turn frames", async () => {
+    const { mailbox, port } = await listen();
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?token=${TOKEN}`);
+    await new Promise<void>((resolve, reject) => {
+      ws.on("open", () => resolve());
+      ws.on("error", reject);
+    });
+    const frames: unknown[] = [];
+    ws.on("message", (data) => frames.push(JSON.parse(String(data))));
+    mailbox.events.emit("turn", {
+      threadId: "t1", agentId: "codex", sinceMessageId: 0, instruction: "go",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    ws.close();
+    expect(frames).toContainEqual(
+      expect.objectContaining({
+        type: "turn",
+        turn: expect.objectContaining({ agentId: "codex", instruction: "go" }),
+      }),
+    );
+  });
 });
