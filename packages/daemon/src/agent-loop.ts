@@ -1,9 +1,12 @@
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { AgentConfig, Message } from "@conclave/shared";
 import type { RuntimeAdapter } from "./adapter.js";
 import type { HubClient } from "./hub-client.js";
 import type { SessionStore } from "./session-store.js";
 import type { TurnQueue } from "./turn-queue.js";
+
+const require = createRequire(import.meta.url);
 
 export const HUB_MCP_TOOLS = [
   "mcp__hub__send_message",
@@ -13,8 +16,11 @@ export const HUB_MCP_TOOLS = [
 ];
 
 const DEFAULT_BRIDGE = {
-  command: "npx",
-  args: ["tsx", fileURLToPath(new URL("./mcp-bridge.ts", import.meta.url))],
+  command: process.execPath,
+  args: [
+    require.resolve("tsx/cli"),
+    fileURLToPath(new URL("./mcp-bridge.ts", import.meta.url)),
+  ],
 };
 
 export function shouldTrigger(
@@ -116,8 +122,11 @@ export class AgentLoop {
           from: agent.id, to: [], type: "status",
           body: `agent ${agent.id} turn failed: ${reason}`, artifacts: [],
         });
-      } catch {
-        // hub unreachable — nothing more we can do from here
+      } catch (statusErr) {
+        console.error(
+          `agent ${agent.id}: failed to post turn-failure status to thread ${m.threadId}:`,
+          statusErr instanceof Error ? statusErr.message : statusErr,
+        );
       }
     }
   }

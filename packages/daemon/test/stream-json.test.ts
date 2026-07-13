@@ -14,6 +14,8 @@ describe("parseStreamLine", () => {
     expect(parseStreamLine("   ")).toBeNull();
     expect(parseStreamLine("not json {")).toBeNull();
     expect(parseStreamLine(`"just a string"`)).toBeNull();
+    expect(parseStreamLine("[1,2,3]")).toBeNull();
+    expect(parseStreamLine("{}")).toBeNull();
   });
 });
 

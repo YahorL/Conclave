@@ -29,6 +29,7 @@ export class HubSocket {
     this.stopped = true;
     this.started = false;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = undefined;
     this.ws?.close();
   }
 

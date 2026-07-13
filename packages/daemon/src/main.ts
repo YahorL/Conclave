@@ -6,34 +6,41 @@ import { TurnQueue } from "./turn-queue.js";
 import { ClaudeCodeAdapter } from "./claude-adapter.js";
 import { AgentLoop } from "./agent-loop.js";
 
-const cfg = loadDaemonConfig(process.env);
-const hub = new HubClient(cfg.hubUrl, cfg.token);
+async function main(): Promise<void> {
+  const cfg = loadDaemonConfig(process.env);
+  const hub = new HubClient(cfg.hubUrl, cfg.token);
 
-const agents = (await hub.getRegistry(cfg.machine)).filter(
-  (a) => a.runtime === "claude-code",
-);
-if (agents.length === 0) {
-  console.warn(`no claude-code agents registered for machine "${cfg.machine}" — idling`);
+  const agents = (await hub.getRegistry(cfg.machine)).filter(
+    (a) => a.runtime === "claude-code",
+  );
+  if (agents.length === 0) {
+    console.warn(`no claude-code agents registered for machine "${cfg.machine}" — idling`);
+  }
+  for (const a of agents) console.log(`agent ${a.id} → ${a.workspace}`);
+
+  const loop = new AgentLoop({
+    agents,
+    hub,
+    adapter: new ClaudeCodeAdapter(cfg.claudeBin),
+    store: new SessionStore(cfg.stateFile),
+    queue: new TurnQueue(),
+    hubUrl: cfg.hubUrl,
+    token: cfg.token,
+    allowAgentTriggers: cfg.allowAgentTriggers,
+  });
+
+  const socket = new HubSocket({
+    hubUrl: cfg.hubUrl,
+    token: cfg.token,
+    onMessage: (m) => {
+      loop.handleMessage(m);
+    },
+  });
+  socket.start();
+  console.log(`conclave daemon on ${cfg.machine}: watching ${agents.length} agent(s) via ${cfg.hubUrl}`);
 }
-for (const a of agents) console.log(`agent ${a.id} → ${a.workspace}`);
 
-const loop = new AgentLoop({
-  agents,
-  hub,
-  adapter: new ClaudeCodeAdapter(cfg.claudeBin),
-  store: new SessionStore(cfg.stateFile),
-  queue: new TurnQueue(),
-  hubUrl: cfg.hubUrl,
-  token: cfg.token,
-  allowAgentTriggers: cfg.allowAgentTriggers,
+main().catch((err: unknown) => {
+  console.error(err instanceof Error ? err.message : String(err));
+  process.exit(1);
 });
-
-const socket = new HubSocket({
-  hubUrl: cfg.hubUrl,
-  token: cfg.token,
-  onMessage: (m) => {
-    loop.handleMessage(m);
-  },
-});
-socket.start();
-console.log(`conclave daemon on ${cfg.machine}: watching ${agents.length} agent(s) via ${cfg.hubUrl}`);
