@@ -73,6 +73,7 @@ export class Mailbox {
         JSON.stringify(thread.verdicts),
         thread.createdAt,
       );
+    this.events.emit("thread", thread);
     return thread;
   }
 

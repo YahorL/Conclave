@@ -1,5 +1,7 @@
+import { randomUUID } from "node:crypto";
 import type Database from "better-sqlite3";
-import type { Task, TaskState } from "@conclave/shared";
+import type { NewTask, Registry, Task, TaskState } from "@conclave/shared";
+import type { Mailbox } from "./mailbox.js";
 
 export class InvalidTransitionError extends Error {
   constructor(from: TaskState, to: TaskState) {
@@ -84,4 +86,42 @@ export class TaskStore {
     this.db.prepare("UPDATE tasks SET state = ?, updated_at = ? WHERE id = ?").run(state, updatedAt, id);
     return { ...current, state, updatedAt };
   }
+}
+
+export class UnknownAssigneeError extends Error {
+  constructor(assignee: string) {
+    super(`unknown assignee: ${assignee}`);
+  }
+}
+
+export function createTask(
+  deps: { mailbox: Mailbox; store: TaskStore; registry: Registry },
+  input: NewTask,
+): Task {
+  const agent = deps.registry.agents.find((a) => a.id === input.assignee);
+  if (!agent) throw new UnknownAssigneeError(input.assignee);
+
+  const thread = deps.mailbox.createThread({
+    kind: "task",
+    participants: [input.assignee, "you"],
+    workspace: input.workspace,
+  });
+  const now = new Date().toISOString();
+  const task: Task = {
+    id: randomUUID(),
+    threadId: thread.id,
+    assignee: input.assignee,
+    spec: input.spec,
+    state: "queued",
+    artifacts: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+  deps.store.create(task);
+  // to:[] — the task frame is the sole execution trigger; this message is a visible record.
+  deps.mailbox.appendMessage(thread.id, {
+    from: "you", to: [], type: "text", body: input.spec, artifacts: [],
+  });
+  deps.mailbox.events.emit("task", task);
+  return task;
 }
