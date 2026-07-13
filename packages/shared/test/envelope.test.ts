@@ -37,6 +37,21 @@ describe("ThreadSchema", () => {
     const result = NewThreadSchema.safeParse({ kind: "chat", participants: [] });
     expect(result.success).toBe(false);
   });
+
+  it("rejects an unknown kind", () => {
+    expect(
+      NewThreadSchema.safeParse({ kind: "party", participants: ["a"] }).success,
+    ).toBe(false);
+  });
+
+  it("rejects empty participants on ThreadSchema too", () => {
+    expect(
+      ThreadSchema.safeParse({
+        id: "t", kind: "chat", workspace: null, participants: [],
+        state: "open", verdicts: {}, createdAt: new Date().toISOString(),
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("MessageSchema", () => {
@@ -63,5 +78,14 @@ describe("MessageSchema", () => {
 
   it("rejects an empty body", () => {
     expect(NewMessageSchema.safeParse({ from: "you", body: "" }).success).toBe(false);
+  });
+
+  it("rejects non-positive and non-integer message ids", () => {
+    const base = {
+      threadId: "t", from: "a", to: [], type: "text",
+      body: "x", artifacts: [], ts: new Date().toISOString(),
+    };
+    expect(MessageSchema.safeParse({ ...base, id: 0 }).success).toBe(false);
+    expect(MessageSchema.safeParse({ ...base, id: 1.5 }).success).toBe(false);
   });
 });

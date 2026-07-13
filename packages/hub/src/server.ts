@@ -148,11 +148,18 @@ function waitForThreadMessage(
     function onMessage(message: Message): void {
       if (message.threadId === threadId) done();
     }
+    function onThread(thread: Thread): void {
+      if (thread.id === threadId && (thread.state === "settled" || thread.state === "closed")) {
+        done();
+      }
+    }
     function done(): void {
       clearTimeout(timer);
       mailbox.events.off("message", onMessage);
+      mailbox.events.off("thread", onThread);
       resolve();
     }
     mailbox.events.on("message", onMessage);
+    mailbox.events.on("thread", onThread);
   });
 }

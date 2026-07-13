@@ -207,4 +207,18 @@ describe("long-poll", () => {
     expect(Date.now() - started).toBeLessThan(500);
     expect(res.json<Message[]>()).toHaveLength(1);
   });
+
+  it("wakes early when the thread settles or closes mid-wait", async () => {
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    const started = Date.now();
+    const pending = app.inject({
+      method: "GET",
+      url: `/api/threads/${t.id}/messages?after=0&wait=10`,
+      headers: AUTH,
+    });
+    setTimeout(() => mailbox.closeThread(t.id), 100);
+    const res = await pending;
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(res.json<Message[]>()).toEqual([]);
+  });
 });
