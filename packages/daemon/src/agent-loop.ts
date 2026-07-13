@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { AgentConfig, AgentRuntime, Message, TurnRequest } from "@conclave/shared";
-import type { RuntimeAdapter } from "./adapter.js";
+import type { RuntimeAdapter, TurnResult } from "./adapter.js";
 import type { DaemonState } from "./daemon-state.js";
 import type { HubClient } from "./hub-client.js";
 import type { TurnQueue } from "./turn-queue.js";
@@ -160,6 +160,47 @@ export class AgentLoop {
     }
   }
 
+  private async reportTurn(
+    agent: AgentConfig,
+    threadId: string,
+    result: TurnResult,
+  ): Promise<void> {
+    if (result.tokens || result.costUsd > 0) {
+      try {
+        await this.opts.hub.postUsage({
+          agent: agent.id,
+          threadId,
+          inputTokens: result.tokens?.input ?? 0,
+          outputTokens: result.tokens?.output ?? 0,
+          costUsd: result.costUsd,
+        });
+      } catch (e) {
+        console.error(
+          `agent ${agent.id}: failed to post usage:`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
+    if (result.isError) {
+      const rateLimited = /rate.?limit|usage limit|too many requests|429/i.test(result.text);
+      const label = rateLimited ? "rate-limited" : "error";
+      try {
+        await this.opts.hub.postMessage(threadId, {
+          from: agent.id,
+          to: [],
+          type: "status",
+          body: `agent ${agent.id} ${label}: ${result.text.slice(0, 200)}`,
+          artifacts: [],
+        });
+      } catch (e) {
+        console.error(
+          `agent ${agent.id}: failed to post error status to thread ${threadId}:`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
+  }
+
   private async runTurn(agent: AgentConfig, m: Message): Promise<void> {
     const { hub, state } = this.opts;
     try {
@@ -174,7 +215,8 @@ export class AgentLoop {
         mcpServers: this.bridgeConfig(m.threadId, agent.id),
       });
       if (result.sessionId) state.setSession(m.threadId, agent.id, result.sessionId);
-      if (result.text.trim()) {
+      await this.reportTurn(agent, m.threadId, result);
+      if (!result.isError && result.text.trim()) {
         await hub.postMessage(m.threadId, {
           from: agent.id, to: [m.from], type: "text", body: result.text, artifacts: [],
         });
@@ -204,7 +246,8 @@ export class AgentLoop {
       const maxSeen = messages.at(-1)?.id;
       if (maxSeen !== undefined) state.setWatermark(turn.threadId, agent.id, maxSeen);
       if (result.sessionId) state.setSession(turn.threadId, agent.id, result.sessionId);
-      if (result.text.trim()) {
+      await this.reportTurn(agent, turn.threadId, result);
+      if (!result.isError && result.text.trim()) {
         await hub.postMessage(turn.threadId, {
           from: agent.id, to: [], type: "text", body: result.text, artifacts: [],
         });

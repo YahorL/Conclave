@@ -39,11 +39,17 @@ export function summarizeTurn(events: CliEvent[]): ParsedTurn {
   if (!result) throw new Error("no result event in CLI output");
   const sessionId =
     result.session_id ?? events.find((e) => typeof e.session_id === "string")?.session_id;
+  const usage = result["usage"] as
+    | { input_tokens?: number; output_tokens?: number }
+    | undefined;
   return {
     sessionId: sessionId ?? "",
     text: result.result ?? "",
     isError: result.is_error === true,
     costUsd: result.total_cost_usd ?? 0,
+    tokens: usage
+      ? { input: usage.input_tokens ?? 0, output: usage.output_tokens ?? 0 }
+      : undefined,
   };
 }
 

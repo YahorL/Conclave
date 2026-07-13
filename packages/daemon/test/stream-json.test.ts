@@ -27,6 +27,7 @@ describe("summarizeTurn", () => {
       text: "Hello from Claude",
       isError: false,
       costUsd: 0.0123,
+      tokens: { input: 10, output: 5 },
     });
   });
 

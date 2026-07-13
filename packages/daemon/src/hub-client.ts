@@ -1,4 +1,11 @@
-import type { AgentConfig, Message, NewMessage, Registry, Thread } from "@conclave/shared";
+import type {
+  AgentConfig,
+  Message,
+  NewMessage,
+  Registry,
+  Thread,
+  UsageReport,
+} from "@conclave/shared";
 
 export class HubApiError extends Error {
   constructor(readonly status: number, body: string) {
@@ -55,5 +62,9 @@ export class HubClient {
 
   setVerdict(threadId: string, agent: string, verdict: string): Promise<Thread> {
     return this.request("POST", `/api/threads/${threadId}/verdict`, { agent, verdict });
+  }
+
+  async postUsage(report: UsageReport): Promise<void> {
+    await this.request("POST", "/api/usage", report);
   }
 }
