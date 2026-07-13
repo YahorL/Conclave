@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import type { AgentConfig, AgentRuntime, Message, TurnRequest } from "@conclave/shared";
+import type { AgentConfig, AgentRuntime, Message, Task, TurnRequest } from "@conclave/shared";
 import type { RuntimeAdapter, TurnResult } from "./adapter.js";
 import type { DaemonState } from "./daemon-state.js";
 import type { HubClient } from "./hub-client.js";
@@ -75,6 +75,30 @@ export function buildDebatePrompt(
   );
 }
 
+export function buildTaskPrompt(agent: AgentConfig, task: Task): string {
+  const role = agent.role ? `${agent.role}\n\n` : "";
+  return (
+    `${role}You are agent "${agent.id}" in Conclave task thread ${task.threadId}. ` +
+    `Hub MCP tools are available: send_message, check_inbox, wait_for_reply, end_thread. ` +
+    `Delegated task:\n\n${task.spec}\n\n` +
+    `Work in this workspace. Your final response text is posted as the task result.`
+  );
+}
+
+export async function runTaskCatchUp(
+  hub: HubClient,
+  agents: AgentConfig[],
+  handle: (t: Task) => void,
+): Promise<number> {
+  let total = 0;
+  for (const agent of agents) {
+    const queued = await hub.listTasks(agent.id, "queued");
+    for (const t of queued) handle(t);
+    total += queued.length;
+  }
+  return total;
+}
+
 export interface AgentLoopOptions {
   agents: AgentConfig[];
   hub: HubClient;
@@ -103,8 +127,59 @@ export async function runCatchUp(
 
 export class AgentLoop {
   private readonly inFlight = new Set<Promise<void>>();
+  private readonly startedTasks = new Set<string>();
 
   constructor(private readonly opts: AgentLoopOptions) {}
+
+  handleTask(task: Task): void {
+    if (this.startedTasks.has(task.id)) return;
+    if (task.state !== "queued") return;
+    const agent = this.opts.agents.find((a) => a.id === task.assignee);
+    if (!agent) return;
+    this.startedTasks.add(task.id);
+    const work = this.opts.queue.run(agent.id, () => this.runTask(agent, task)).catch(() => undefined);
+    this.inFlight.add(work);
+    void work.finally(() => this.inFlight.delete(work));
+  }
+
+  private async runTask(agent: AgentConfig, task: Task): Promise<void> {
+    const { hub } = this.opts;
+    try {
+      await hub.setTaskState(task.id, "running");
+      await this.reportStatus(agent, "running", `task ${task.id}`, task.threadId);
+      const adapter = this.opts.adapters[agent.runtime];
+      if (!adapter) throw new Error(`no adapter for runtime ${agent.runtime}`);
+      const result = await adapter.runTurn({
+        cwd: agent.workspace,
+        prompt: buildTaskPrompt(agent, task),
+        allowedTools: [...agent.allowedTools, ...HUB_MCP_TOOLS],
+        mcpServers: this.bridgeConfig(task.threadId, agent.id),
+      });
+      await this.reportTurn(agent, task.threadId, result);
+      await this.reportTurnStatus(agent, task.threadId, result);
+      if (result.isError) {
+        await hub.setTaskState(task.id, "failed");
+        return;
+      }
+      if (result.text.trim()) {
+        await hub.postMessage(task.threadId, {
+          from: agent.id, to: [], type: "text", body: result.text, artifacts: [],
+        });
+      }
+      await hub.setTaskState(task.id, "done");
+    } catch (e) {
+      await this.postFailure(agent, task.threadId, e);
+      await this.reportStatus(agent, "idle", "", task.threadId);
+      try {
+        await hub.setTaskState(task.id, "failed");
+      } catch (stateErr) {
+        console.error(
+          `agent ${agent.id}: failed to mark task ${task.id} failed:`,
+          stateErr instanceof Error ? stateErr.message : stateErr,
+        );
+      }
+    }
+  }
 
   handleMessage(m: Message): void {
     if (m.id <= this.opts.state.getCursor()) return;

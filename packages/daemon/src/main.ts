@@ -5,7 +5,7 @@ import { DaemonState } from "./daemon-state.js";
 import { TurnQueue } from "./turn-queue.js";
 import { ClaudeCodeAdapter } from "./claude-adapter.js";
 import { CodexAdapter } from "./codex-adapter.js";
-import { AgentLoop, runCatchUp } from "./agent-loop.js";
+import { AgentLoop, runCatchUp, runTaskCatchUp } from "./agent-loop.js";
 
 async function main(): Promise<void> {
   const cfg = loadDaemonConfig(process.env);
@@ -38,12 +38,17 @@ async function main(): Promise<void> {
     onOpen: async () => {
       const caught = await runCatchUp(hub, state, (m) => loop.handleMessage(m));
       if (caught > 0) console.log(`catch-up: processed ${caught} message(s)`);
+      const caughtTasks = await runTaskCatchUp(hub, agents, (t) => loop.handleTask(t));
+      if (caughtTasks > 0) console.log(`task catch-up: picked up ${caughtTasks} task(s)`);
     },
     onMessage: (m) => {
       loop.handleMessage(m);
     },
     onTurn: (turn) => {
       loop.handleTurnRequest(turn);
+    },
+    onTask: (task) => {
+      loop.handleTask(task);
     },
   });
   socket.start();
