@@ -2,12 +2,14 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } f
 import websocket from "@fastify/websocket";
 import { z } from "zod";
 import type Database from "better-sqlite3";
-import type { AgentStatus, Message, Thread, TurnRequest, Registry } from "@conclave/shared";
+import type { AgentStatus, Message, Task, Thread, TurnRequest, Registry } from "@conclave/shared";
 import {
   AgentStatusReportSchema,
   NewDebateSchema,
   NewMessageSchema,
+  NewTaskSchema,
   NewThreadSchema,
+  TaskStateSchema,
   UsageReportSchema,
 } from "@conclave/shared";
 import {
@@ -19,6 +21,7 @@ import {
 import { getUsageSummary, listUsage, recordUsage } from "./usage.js";
 import type { DebateOrchestrator } from "./orchestrator.js";
 import type { AgentStatusStore } from "./status.js";
+import { TaskStore, createTask, InvalidTransitionError, UnknownAssigneeError } from "./tasks.js";
 
 export interface ServerOptions {
   mailbox: Mailbox;
@@ -28,6 +31,7 @@ export interface ServerOptions {
   orchestrator?: DebateOrchestrator;
   status?: AgentStatusStore;
   budgetUsd?: number;
+  tasks?: TaskStore;
 }
 
 const VerdictBodySchema = z.object({
@@ -55,6 +59,8 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     if (err instanceof ThreadNotFoundError) return reply.code(404).send({ error: err.message });
     if (err instanceof ThreadClosedError) return reply.code(409).send({ error: err.message });
     if (err instanceof NotAParticipantError) return reply.code(403).send({ error: err.message });
+    if (err instanceof UnknownAssigneeError) return reply.code(400).send({ error: err.message });
+    if (err instanceof InvalidTransitionError) return reply.code(409).send({ error: err.message });
     if (err instanceof z.ZodError) return reply.code(400).send({ error: "invalid request" });
     if (typeof err.statusCode === "number" && err.statusCode < 500) {
       return reply.code(err.statusCode).send({ error: err.message });
@@ -168,6 +174,46 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     return reply.code(201).send(opts.orchestrator.startDebate(body));
   });
 
+  const TaskStateBodySchema = z.object({ state: TaskStateSchema });
+
+  app.post("/api/tasks", async (req, reply) => {
+    if (!opts.tasks) return reply.code(503).send({ error: "tasks store not configured" });
+    const body = parseOr400(NewTaskSchema, req.body, reply);
+    if (!body) return;
+    const task = createTask({ mailbox, store: opts.tasks, registry }, body);
+    return reply.code(201).send(task);
+  });
+
+  app.get("/api/tasks", async (req, reply) => {
+    if (!opts.tasks) return reply.code(503).send({ error: "tasks store not configured" });
+    const q = req.query as { assignee?: string; state?: string };
+    if (q.assignee && q.state) {
+      const state = TaskStateSchema.safeParse(q.state);
+      if (!state.success) return reply.code(400).send({ error: "invalid state" });
+      return opts.tasks.listByAssigneeState(q.assignee, state.data);
+    }
+    return opts.tasks.list();
+  });
+
+  app.get("/api/tasks/:id", async (req, reply) => {
+    if (!opts.tasks) return reply.code(503).send({ error: "tasks store not configured" });
+    const { id } = IdParamsSchema.parse(req.params);
+    const task = opts.tasks.get(id);
+    if (!task) return reply.code(404).send({ error: `task not found: ${id}` });
+    return task;
+  });
+
+  app.post("/api/tasks/:id/state", async (req, reply) => {
+    if (!opts.tasks) return reply.code(503).send({ error: "tasks store not configured" });
+    const { id } = IdParamsSchema.parse(req.params);
+    const body = parseOr400(TaskStateBodySchema, req.body, reply);
+    if (!body) return;
+    if (!opts.tasks.get(id)) return reply.code(404).send({ error: `task not found: ${id}` });
+    const task = opts.tasks.updateState(id, body.state);
+    mailbox.events.emit("task", task);
+    return task;
+  });
+
   app.get("/ws", { websocket: true }, (socket) => {
     const onMessage = (message: Message): void => {
       socket.send(JSON.stringify({ type: "message", message }));
@@ -181,14 +227,19 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const onStatus = (status: AgentStatus): void => {
       socket.send(JSON.stringify({ type: "agent-status", status }));
     };
+    const onTask = (task: Task): void => {
+      socket.send(JSON.stringify({ type: "task", task }));
+    };
     mailbox.events.on("message", onMessage);
     mailbox.events.on("thread", onThread);
     mailbox.events.on("turn", onTurn);
+    mailbox.events.on("task", onTask);
     if (opts.status) opts.status.events.on("agent-status", onStatus);
     socket.on("close", () => {
       mailbox.events.off("message", onMessage);
       mailbox.events.off("thread", onThread);
       mailbox.events.off("turn", onTurn);
+      mailbox.events.off("task", onTask);
       if (opts.status) opts.status.events.off("agent-status", onStatus);
     });
   });
