@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import type { AgentConfig, Message } from "@conclave/shared";
+import type { AgentConfig, Message, TurnRequest } from "@conclave/shared";
 import type { RuntimeAdapter } from "./adapter.js";
 import type { DaemonState } from "./daemon-state.js";
 import type { HubClient } from "./hub-client.js";
@@ -43,6 +43,27 @@ export function buildTurnPrompt(agent: AgentConfig, m: Message, isFirstTurn: boo
     `Hub MCP tools are available: send_message, check_inbox, wait_for_reply, end_thread. ` +
     `Your final response text is posted to the thread automatically — use send_message only ` +
     `for additional mid-turn messages.\n\n[${m.from}]: ${m.body}`
+  );
+}
+
+export function buildDebatePrompt(
+  agent: AgentConfig,
+  turn: TurnRequest,
+  messages: Message[],
+  isFirstTurn: boolean,
+): string {
+  const rendered = messages.map((m) => `[${m.from}]: ${m.body}`).join("\n\n");
+  const instruction = turn.instruction
+    ? `\n\nInstruction from orchestrator: ${turn.instruction}`
+    : "";
+  if (!isFirstTurn) return `New messages:\n\n${rendered}${instruction}`;
+  const role = agent.role ? `${agent.role}\n\n` : "";
+  return (
+    `${role}You are agent "${agent.id}" in Conclave debate thread ${turn.threadId}. ` +
+    `Hub MCP tools are available: send_message, check_inbox, wait_for_reply, end_thread. ` +
+    `When your position is final, call end_thread with a verdict (approve / reject / short ` +
+    `position summary). Your final response text is posted to the thread automatically.` +
+    `\n\nThread so far:\n\n${rendered}${instruction}`
   );
 }
 
@@ -96,9 +117,51 @@ export class AgentLoop {
     }
   }
 
-  private async runTurn(agent: AgentConfig, m: Message): Promise<void> {
-    const { hub, state, hubUrl, token } = this.opts;
+  handleTurnRequest(turn: TurnRequest): void {
+    const agent = this.opts.agents.find((a) => a.id === turn.agentId);
+    if (!agent) return;
+    const work = this.opts.queue
+      .run(agent.id, () => this.runDebateTurn(agent, turn))
+      .catch(() => undefined);
+    this.inFlight.add(work);
+    void work.finally(() => this.inFlight.delete(work));
+  }
+
+  private bridgeConfig(threadId: string, agentId: string): Record<string, unknown> {
+    const { hubUrl, token } = this.opts;
     const bridge = this.opts.bridgeCommand ?? DEFAULT_BRIDGE;
+    return {
+      hub: {
+        command: bridge.command,
+        args: bridge.args,
+        env: {
+          CONCLAVE_HUB_URL: hubUrl,
+          CONCLAVE_TOKEN: token,
+          CONCLAVE_THREAD_ID: threadId,
+          CONCLAVE_AGENT_ID: agentId,
+        },
+      },
+    };
+  }
+
+  private async postFailure(agent: AgentConfig, threadId: string, e: unknown): Promise<void> {
+    const { hub } = this.opts;
+    const reason = e instanceof Error ? e.message : String(e);
+    try {
+      await hub.postMessage(threadId, {
+        from: agent.id, to: [], type: "status",
+        body: `agent ${agent.id} turn failed: ${reason}`, artifacts: [],
+      });
+    } catch (statusErr) {
+      console.error(
+        `agent ${agent.id}: failed to post turn-failure status to thread ${threadId}:`,
+        statusErr instanceof Error ? statusErr.message : statusErr,
+      );
+    }
+  }
+
+  private async runTurn(agent: AgentConfig, m: Message): Promise<void> {
+    const { hub, state } = this.opts;
     try {
       const sessionId = state.getSession(m.threadId, agent.id);
       const result = await this.opts.adapter.runTurn({
@@ -106,18 +169,7 @@ export class AgentLoop {
         prompt: buildTurnPrompt(agent, m, sessionId === undefined),
         sessionId,
         allowedTools: [...agent.allowedTools, ...HUB_MCP_TOOLS],
-        mcpServers: {
-          hub: {
-            command: bridge.command,
-            args: bridge.args,
-            env: {
-              CONCLAVE_HUB_URL: hubUrl,
-              CONCLAVE_TOKEN: token,
-              CONCLAVE_THREAD_ID: m.threadId,
-              CONCLAVE_AGENT_ID: agent.id,
-            },
-          },
-        },
+        mcpServers: this.bridgeConfig(m.threadId, agent.id),
       });
       if (result.sessionId) state.setSession(m.threadId, agent.id, result.sessionId);
       if (result.text.trim()) {
@@ -126,18 +178,35 @@ export class AgentLoop {
         });
       }
     } catch (e) {
-      const reason = e instanceof Error ? e.message : String(e);
-      try {
-        await hub.postMessage(m.threadId, {
-          from: agent.id, to: [], type: "status",
-          body: `agent ${agent.id} turn failed: ${reason}`, artifacts: [],
+      await this.postFailure(agent, m.threadId, e);
+    }
+  }
+
+  private async runDebateTurn(agent: AgentConfig, turn: TurnRequest): Promise<void> {
+    const { hub, state } = this.opts;
+    try {
+      const since = Math.max(state.getWatermark(turn.threadId, agent.id), turn.sinceMessageId);
+      const messages = (await hub.listMessages(turn.threadId, since)).filter(
+        (m) => m.from !== agent.id,
+      );
+      const sessionId = state.getSession(turn.threadId, agent.id);
+      const result = await this.opts.adapter.runTurn({
+        cwd: agent.workspace,
+        prompt: buildDebatePrompt(agent, turn, messages, sessionId === undefined),
+        sessionId,
+        allowedTools: [...agent.allowedTools, ...HUB_MCP_TOOLS],
+        mcpServers: this.bridgeConfig(turn.threadId, agent.id),
+      });
+      const maxSeen = messages.at(-1)?.id;
+      if (maxSeen !== undefined) state.setWatermark(turn.threadId, agent.id, maxSeen);
+      if (result.sessionId) state.setSession(turn.threadId, agent.id, result.sessionId);
+      if (result.text.trim()) {
+        await hub.postMessage(turn.threadId, {
+          from: agent.id, to: [], type: "text", body: result.text, artifacts: [],
         });
-      } catch (statusErr) {
-        console.error(
-          `agent ${agent.id}: failed to post turn-failure status to thread ${m.threadId}:`,
-          statusErr instanceof Error ? statusErr.message : statusErr,
-        );
       }
+    } catch (e) {
+      await this.postFailure(agent, turn.threadId, e);
     }
   }
 }

@@ -1,11 +1,17 @@
 import WebSocket from "ws";
-import { MessageSchema, type Message } from "@conclave/shared";
+import {
+  MessageSchema,
+  TurnRequestSchema,
+  type Message,
+  type TurnRequest,
+} from "@conclave/shared";
 
 export interface HubSocketOptions {
   hubUrl: string;
   token: string;
   onOpen?: () => void | Promise<void>;
   onMessage: (m: Message) => void;
+  onTurn?: (turn: TurnRequest) => void;
   reconnectDelayMs?: number;
 }
 
@@ -56,10 +62,17 @@ export class HubSocket {
     const handleData = (data: Buffer | string): void => {
       try {
         const frame: unknown = JSON.parse(String(data));
-        const candidate = (frame as { type?: unknown; message?: unknown });
-        if (candidate.type !== "message") return;
-        const parsed = MessageSchema.safeParse(candidate.message);
-        if (parsed.success) this.opts.onMessage(parsed.data);
+        const candidate = frame as { type?: unknown; message?: unknown; turn?: unknown };
+        if (candidate.type === "message") {
+          const parsed = MessageSchema.safeParse(candidate.message);
+          if (parsed.success) this.opts.onMessage(parsed.data);
+          return;
+        }
+        if (candidate.type === "turn" && this.opts.onTurn) {
+          const parsedTurn = TurnRequestSchema.safeParse(candidate.turn);
+          if (parsedTurn.success) this.opts.onTurn(parsedTurn.data);
+          return;
+        }
       } catch {
         // ignore unparseable frames
       }

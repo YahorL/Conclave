@@ -40,6 +40,9 @@ async function main(): Promise<void> {
     onMessage: (m) => {
       loop.handleMessage(m);
     },
+    onTurn: (turn) => {
+      loop.handleTurnRequest(turn);
+    },
   });
   socket.start();
   console.log(`conclave daemon on ${cfg.machine}: watching ${agents.length} agent(s) via ${cfg.hubUrl}`);
