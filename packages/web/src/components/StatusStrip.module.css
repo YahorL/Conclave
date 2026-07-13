@@ -1,0 +1,11 @@
+.strip {
+  width: 280px;
+  flex: none;
+  background: var(--rail);
+  border-left: 1px solid var(--border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}

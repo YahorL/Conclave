@@ -1,0 +1,6 @@
+.strip {
+  height: 44px;
+  flex: none;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
