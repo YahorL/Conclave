@@ -85,3 +85,14 @@ orchestrator eventually stamps it `no-response (timeout)` rather than resuming.
    (`packages/web/README.md`) and confirm the group chat, sidebar agents with
    live status dots, and the right-rail live-status/usage all update as agents
    take turns. Optional pixel diff vs section 4a via `packages/web/e2e/visual.spec.ts`.
+6. Delegation (step 5): `POST /api/tasks` (or `/task @agent <spec>` from the web
+   composer) for a registry agent. Confirm the daemon picks it up (`running`), the
+   agent works in its workspace, the result posts to the task thread, and the task
+   ends `done` (or `failed` with the reason in-thread). Then create a task while
+   the daemon is stopped and start it — task catch-up on connect should pick up the
+   `queued` task and complete it. Verified locally end-to-end with the codex fake
+   adapter: `CONCLAVE_CODEX_BIN=<fake> npx tsx packages/daemon/src/main.ts` →
+   `queued → running → done`, exactly one adapter spawn, result posted in-thread.
+   NOTE: run exactly one daemon per machine — two daemons for the same agent both
+   claim the task; the loser hits the hub's `running→running` transition guard
+   (no double completion, but a spurious `failed` status is posted).
