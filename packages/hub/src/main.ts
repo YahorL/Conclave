@@ -6,6 +6,7 @@ import { buildServer } from "./server.js";
 import { loadRegistry } from "./registry.js";
 import { DebateStore } from "./debates.js";
 import { DebateOrchestrator } from "./orchestrator.js";
+import { AgentStatusStore } from "./status.js";
 
 const token = process.env["CONCLAVE_TOKEN"];
 if (!token) {
@@ -24,7 +25,9 @@ const debateStore = new DebateStore(db);
 const interrupted = debateStore.markRunningInterrupted();
 if (interrupted > 0) console.warn(`${interrupted} debate(s) marked interrupted from previous run`);
 const orchestrator = new DebateOrchestrator(mailbox, debateStore);
-const app = await buildServer({ mailbox, token, registry, db, orchestrator });
+const status = new AgentStatusStore();
+const budgetUsd = Number(process.env["CONCLAVE_BUDGET_USD"] ?? 25);
+const app = await buildServer({ mailbox, token, registry, db, orchestrator, status, budgetUsd });
 await app.listen({ port, host: "0.0.0.0" });
 console.log(`conclave hub: ${registry.agents.length} agent(s) registered`);
 console.log(`conclave hub listening on :${port}`);

@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { UsageReport } from "@conclave/shared";
+import type { AgentUsage, UsageReport, UsageSummary } from "@conclave/shared";
 
 export interface UsageRow extends UsageReport {
   id: number;
@@ -28,6 +28,35 @@ export function recordUsage(db: Database.Database, report: UsageReport): void {
     report.costUsd,
     new Date().toISOString(),
   );
+}
+
+interface SummaryRow {
+  agent: string;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+}
+
+export function getUsageSummary(db: Database.Database, budgetUsd: number): UsageSummary {
+  const rows = db
+    .prepare(
+      `SELECT agent,
+              SUM(input_tokens)  AS input_tokens,
+              SUM(output_tokens) AS output_tokens,
+              SUM(cost_usd)      AS cost_usd
+       FROM usage
+       GROUP BY agent
+       ORDER BY cost_usd DESC`,
+    )
+    .all() as SummaryRow[];
+  const perAgent: AgentUsage[] = rows.map((r) => ({
+    agent: r.agent,
+    inputTokens: r.input_tokens ?? 0,
+    outputTokens: r.output_tokens ?? 0,
+    costUsd: r.cost_usd ?? 0,
+  }));
+  const totalCostUsd = perAgent.reduce((sum, a) => sum + a.costUsd, 0);
+  return { perAgent, totalCostUsd, budgetUsd };
 }
 
 export function listUsage(db: Database.Database, limit = 100): UsageRow[] {

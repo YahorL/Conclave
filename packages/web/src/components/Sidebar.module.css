@@ -1,0 +1,85 @@
+.sidebar {
+  width: 272px;
+  flex: none;
+  background: var(--rail);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.rail {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+.railBtnActive {
+  width: 32px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hover);
+  border-bottom: 2px solid var(--sel-bg);
+  color: var(--text-primary);
+}
+.section {
+  padding: 10px 8px;
+}
+.sectionHeader {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 4px 6px 8px;
+}
+.row,
+.rowSelected {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 12.5px;
+}
+.row {
+  color: var(--text-secondary);
+}
+.row:hover {
+  background: var(--hover);
+}
+.rowSelected {
+  background: var(--sel-bg);
+  color: var(--sel-text);
+  font-weight: 600;
+}
+.agentRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.agentName {
+  font-size: 12.5px;
+  flex: 1;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.dot[data-status="running"] {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

@@ -1,0 +1,9 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  flex: none;
+  user-select: none;
+}

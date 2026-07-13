@@ -1,0 +1,122 @@
+.strip {
+  width: 280px;
+  flex: none;
+  background: var(--rail);
+  border-left: 1px solid var(--border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+.sectionHeader {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: none;
+}
+.name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  flex: 1;
+}
+.status {
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.status[data-status="running"] {
+  color: var(--live);
+}
+.status[data-status="blocked"] {
+  color: var(--blocked);
+}
+.status[data-status="idle"] {
+  color: var(--text-muted);
+}
+.activity {
+  color: var(--text-secondary-2);
+  font-size: 11px;
+  margin: 6px 0;
+}
+.progressTrack {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progressRunning {
+  height: 100%;
+  width: 40%;
+  background: var(--sel-bg);
+  border-radius: 2px;
+  animation: indeterminate 1.6s ease-in-out infinite;
+}
+.progressIdle {
+  height: 100%;
+  width: 0;
+}
+@keyframes indeterminate {
+  0% {
+    margin-left: -40%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+.usageRow {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+}
+.metric {
+  grid-column: 1 / -1;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary-2);
+}
+.usageTrack {
+  grid-column: 1 / -1;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.usageFill {
+  height: 100%;
+  background: var(--usage-normal);
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: auto;
+  font-size: 11px;
+  color: var(--text-secondary-2);
+}
+.spend {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
