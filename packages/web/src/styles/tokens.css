@@ -1,0 +1,45 @@
+:root[data-theme="black"] {
+  --chrome: #000000;
+  --surface: #0d0d0d;
+  --rail: #050505;
+  --card: #0d0d0d;
+  --border-strong: #333333;
+  --border: #1f1f1f;
+  --border-2: #262626;
+  --hairline: #1a1a1a;
+  --hover: #171717;
+  --chip: #1f1f1f;
+
+  --text-primary: #f5f5f5;
+  --text-body: #c9c9c9;
+  --text-secondary: #8a8a8a;
+  --text-secondary-2: #737373;
+  --text-muted: #555555;
+  --text-code: #a3a3a3;
+  --code-bg: #000000;
+  --inline-code-bg: #171717;
+
+  --live: #2dd4bf;
+  --blocked: #facc15;
+  --warn: #f2a65a;
+  --danger: #f87171;
+  --usage-normal: #d4d4d4;
+
+  --sel-bg: #f5f5f5;
+  --sel-text: #0a0a0a;
+
+  --agent-claude-code: #e8a06a;
+  --agent-claude-code-text: #1a0f06;
+  --agent-codex: #7dd3fc;
+  --agent-codex-text: #06121a;
+  --agent-reviewer: #c4b5fd;
+  --agent-reviewer-text: #120a1f;
+  --agent-default: #8a8a8a;
+  --agent-default-text: #0a0a0a;
+
+  --artifact-plan: #f28b82;
+  --artifact-ticket: #fbbf24;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
