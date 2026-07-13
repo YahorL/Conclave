@@ -10,6 +10,12 @@ function threadLabel(workspace: string | null, kind: string): string {
   return kind === "dm" ? "direct message" : "thread";
 }
 
+function artifactColor(name: string): string {
+  if (/ticket/i.test(name)) return "var(--artifact-ticket)";
+  if (/plan/i.test(name)) return "var(--artifact-plan)";
+  return "var(--text-secondary-2)";
+}
+
 export function Sidebar(): JSX.Element {
   const threads = useConclaveStore((s) => s.threads);
   const agents = useConclaveStore((s) => s.agents);
@@ -17,6 +23,8 @@ export function Sidebar(): JSX.Element {
   const activeThreadId = useConclaveStore((s) => s.activeThreadId);
   const setActiveThread = useConclaveStore((s) => s.setActiveThread);
   const setMessages = useConclaveStore((s) => s.setMessages);
+  const artifacts = useConclaveStore((s) => Object.values(s.artifactsById));
+  const setActiveArtifact = useConclaveStore((s) => s.setActiveArtifact);
 
   const openThread = async (id: string): Promise<void> => {
     setActiveThread(id);
@@ -67,6 +75,22 @@ export function Sidebar(): JSX.Element {
           );
         })}
       </div>
+
+      {artifacts.length > 0 && (
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>artifacts</div>
+          {artifacts.map((a) => (
+            <button
+              key={a.id}
+              className={styles.artifactRow}
+              onClick={() => setActiveArtifact(a.id)}
+            >
+              <span className={styles.artifactIcon} style={{ color: artifactColor(a.name) }}>▦</span>
+              <span className={styles.artifactName}>{a.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </aside>
   );
 }
