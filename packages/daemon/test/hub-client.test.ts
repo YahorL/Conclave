@@ -23,6 +23,7 @@ describe("loadDaemonConfig", () => {
     const cfg = loadDaemonConfig(base);
     expect(cfg.hubUrl).toBe("http://hub:7777");
     expect(cfg.claudeBin).toBe("claude");
+    expect(cfg.codexBin).toBe("codex");
     expect(cfg.stateFile).toBe("./daemon-state.json");
     expect(cfg.allowAgentTriggers).toBe(false);
   });

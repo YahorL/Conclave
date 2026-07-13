@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import type { AgentConfig, Message, TurnRequest } from "@conclave/shared";
+import type { AgentConfig, AgentRuntime, Message, TurnRequest } from "@conclave/shared";
 import type { RuntimeAdapter } from "./adapter.js";
 import type { DaemonState } from "./daemon-state.js";
 import type { HubClient } from "./hub-client.js";
@@ -70,7 +70,7 @@ export function buildDebatePrompt(
 export interface AgentLoopOptions {
   agents: AgentConfig[];
   hub: HubClient;
-  adapter: RuntimeAdapter;
+  adapters: Partial<Record<AgentRuntime, RuntimeAdapter>>;
   state: DaemonState;
   queue: TurnQueue;
   hubUrl: string;
@@ -163,8 +163,10 @@ export class AgentLoop {
   private async runTurn(agent: AgentConfig, m: Message): Promise<void> {
     const { hub, state } = this.opts;
     try {
+      const adapter = this.opts.adapters[agent.runtime];
+      if (!adapter) throw new Error(`no adapter for runtime ${agent.runtime}`);
       const sessionId = state.getSession(m.threadId, agent.id);
-      const result = await this.opts.adapter.runTurn({
+      const result = await adapter.runTurn({
         cwd: agent.workspace,
         prompt: buildTurnPrompt(agent, m, sessionId === undefined),
         sessionId,
@@ -189,8 +191,10 @@ export class AgentLoop {
       const messages = (await hub.listMessages(turn.threadId, since)).filter(
         (m) => m.from !== agent.id,
       );
+      const adapter = this.opts.adapters[agent.runtime];
+      if (!adapter) throw new Error(`no adapter for runtime ${agent.runtime}`);
       const sessionId = state.getSession(turn.threadId, agent.id);
-      const result = await this.opts.adapter.runTurn({
+      const result = await adapter.runTurn({
         cwd: agent.workspace,
         prompt: buildDebatePrompt(agent, turn, messages, sessionId === undefined),
         sessionId,

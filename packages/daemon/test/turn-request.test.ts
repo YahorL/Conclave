@@ -76,7 +76,8 @@ describe("turn requests end to end", () => {
     const adapter = new FakeAdapter();
     const state = new DaemonState(join(dir, "state.json"));
     const loop = new AgentLoop({
-      agents: [AGENT], hub: new HubClient(hubUrl, TOKEN), adapter, state,
+      agents: [AGENT], hub: new HubClient(hubUrl, TOKEN),
+      adapters: { "claude-code": adapter, codex: adapter }, state,
       queue: new TurnQueue(), hubUrl, token: TOKEN, allowAgentTriggers: false,
       bridgeCommand: { command: "node", args: ["/fake/bridge.js"] },
     });

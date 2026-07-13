@@ -4,17 +4,16 @@ import { HubSocket } from "./hub-socket.js";
 import { DaemonState } from "./daemon-state.js";
 import { TurnQueue } from "./turn-queue.js";
 import { ClaudeCodeAdapter } from "./claude-adapter.js";
+import { CodexAdapter } from "./codex-adapter.js";
 import { AgentLoop, runCatchUp } from "./agent-loop.js";
 
 async function main(): Promise<void> {
   const cfg = loadDaemonConfig(process.env);
   const hub = new HubClient(cfg.hubUrl, cfg.token);
 
-  const agents = (await hub.getRegistry(cfg.machine)).filter(
-    (a) => a.runtime === "claude-code",
-  );
+  const agents = await hub.getRegistry(cfg.machine);
   if (agents.length === 0) {
-    console.warn(`no claude-code agents registered for machine "${cfg.machine}" — idling`);
+    console.warn(`no agents registered for machine "${cfg.machine}" — idling`);
   }
   for (const a of agents) console.log(`agent ${a.id} → ${a.workspace}`);
 
@@ -22,7 +21,10 @@ async function main(): Promise<void> {
   const loop = new AgentLoop({
     agents,
     hub,
-    adapter: new ClaudeCodeAdapter(cfg.claudeBin),
+    adapters: {
+      "claude-code": new ClaudeCodeAdapter(cfg.claudeBin),
+      codex: new CodexAdapter(cfg.codexBin),
+    },
     state,
     queue: new TurnQueue(),
     hubUrl: cfg.hubUrl,

@@ -93,7 +93,7 @@ describe("AgentLoop end-to-end (live hub, fake adapter)", () => {
     const loop = new AgentLoop({
       agents: [AGENT],
       hub: new HubClient(hubUrl, TOKEN),
-      adapter,
+      adapters: { "claude-code": adapter, codex: adapter },
       state: new DaemonState(join(dir, "state.json")),
       queue: new TurnQueue(),
       hubUrl,
