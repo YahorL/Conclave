@@ -3,7 +3,7 @@ import websocket from "@fastify/websocket";
 import { z } from "zod";
 import type Database from "better-sqlite3";
 import type { Message, Thread, TurnRequest, Registry } from "@conclave/shared";
-import { NewMessageSchema, NewThreadSchema, UsageReportSchema } from "@conclave/shared";
+import { NewDebateSchema, NewMessageSchema, NewThreadSchema, UsageReportSchema } from "@conclave/shared";
 import {
   Mailbox,
   NotAParticipantError,
@@ -11,12 +11,14 @@ import {
   ThreadNotFoundError,
 } from "./mailbox.js";
 import { listUsage, recordUsage } from "./usage.js";
+import type { DebateOrchestrator } from "./orchestrator.js";
 
 export interface ServerOptions {
   mailbox: Mailbox;
   token: string;
   registry?: Registry;
   db?: Database.Database;
+  orchestrator?: DebateOrchestrator;
 }
 
 const VerdictBodySchema = z.object({
@@ -131,6 +133,13 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   app.get("/api/usage", async (_req, reply) => {
     if (!opts.db) return reply.code(503).send({ error: "usage store not configured" });
     return listUsage(opts.db);
+  });
+
+  app.post("/api/debates", async (req, reply) => {
+    if (!opts.orchestrator) return reply.code(503).send({ error: "orchestrator not configured" });
+    const body = parseOr400(NewDebateSchema, req.body, reply);
+    if (!body) return;
+    return reply.code(201).send(opts.orchestrator.startDebate(body));
   });
 
   app.get("/ws", { websocket: true }, (socket) => {

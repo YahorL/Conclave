@@ -4,6 +4,8 @@ import { openDb } from "./db.js";
 import { Mailbox } from "./mailbox.js";
 import { buildServer } from "./server.js";
 import { loadRegistry } from "./registry.js";
+import { DebateStore } from "./debates.js";
+import { DebateOrchestrator } from "./orchestrator.js";
 
 const token = process.env["CONCLAVE_TOKEN"];
 if (!token) {
@@ -18,7 +20,11 @@ mkdirSync(dataDir, { recursive: true });
 const db = openDb(join(dataDir, "conclave.db"));
 const mailbox = new Mailbox(db);
 const registry = loadRegistry(join(dataDir, "registry.yaml"));
-const app = await buildServer({ mailbox, token, registry, db });
+const debateStore = new DebateStore(db);
+const interrupted = debateStore.markRunningInterrupted();
+if (interrupted > 0) console.warn(`${interrupted} debate(s) marked interrupted from previous run`);
+const orchestrator = new DebateOrchestrator(mailbox, debateStore);
+const app = await buildServer({ mailbox, token, registry, db, orchestrator });
 await app.listen({ port, host: "0.0.0.0" });
 console.log(`conclave hub: ${registry.agents.length} agent(s) registered`);
 console.log(`conclave hub listening on :${port}`);

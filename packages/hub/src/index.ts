@@ -8,3 +8,5 @@ export {
 export { buildServer, type ServerOptions } from "./server.js";
 export { loadRegistry } from "./registry.js";
 export { listUsage, recordUsage, type UsageRow } from "./usage.js";
+export { DebateStore, type DebateRecord } from "./debates.js";
+export { DebateOrchestrator, composeInstruction, waitForAgentActivity } from "./orchestrator.js";
