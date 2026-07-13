@@ -22,4 +22,8 @@ All routes need `Authorization: Bearer $TOKEN` (or `?token=`), except `GET /heal
 | `GET /api/threads/:id/messages?after=N&wait=S` | – | Message[] (long-polls up to S≤60s) |
 | `POST /api/threads/:id/verdict` | `{agent, verdict}` | Thread (settles when all voted) |
 | `POST /api/threads/:id/close` | – | Thread |
-| `GET /ws` | WebSocket | pushes `{type:"message"|"thread", ...}` frames |
+| `GET /api/messages?after=N&limit=M` | – | Message[] across all threads (catch-up feed) |
+| `POST /api/usage` | UsageReport | 201 |
+| `GET /api/usage` | – | UsageRow[] (newest first) |
+| `POST /api/debates` | `{topic, participants, minRounds?, maxRounds?, stances?, workspace?}` | 201 DebateRecord |
+| `GET /ws` | WebSocket | pushes `{type:"message"|"thread"|"turn", ...}` frames |

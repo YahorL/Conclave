@@ -46,3 +46,30 @@ Agents live in `registry.yaml` in the hub's data dir:
          -H "Authorization: Bearer dev"
 
 Expect the agent's reply (and any extra send_message posts) in the list.
+
+## Debates
+
+Start one (agents must be registered and their daemon running):
+
+    curl -s -X POST localhost:7777/api/debates \
+      -H "Authorization: Bearer dev" -H "Content-Type: application/json" \
+      -d '{"topic":"Review branch feat/x in your workspace: should we merge? Use git diff main...feat/x.","participants":["claude-code","codex"],"minRounds":2,"maxRounds":4}'
+
+    curl -s "localhost:7777/api/threads/<threadId>/messages" -H "Authorization: Bearer dev"
+
+The orchestrator assigns stances (advocate / skeptic / risk-reviewer), drives
+round-robin turns via websocket turn frames, forces verdicts after maxRounds,
+and posts a summary. Codex agents run `codex exec --json --sandbox
+workspace-write -c approval_policy=never` (set `CONCLAVE_CODEX_BIN` to
+override the binary).
+
+## Manual smoke checklist (burns real quota — run deliberately)
+
+1. Claude turn: README steps above (step-2 smoke) still pass.
+2. Codex turn: same flow with a codex agent — verifies `approval_policy=never`
+   actually suppresses approvals in exec mode (unverified against a live turn
+   so far) and that the MCP bridge connects via `-c mcp_servers` overrides.
+3. `wait_for_reply` inside a real debate turn: confirm the CLI's MCP tool
+   timeout tolerates the 60s long-poll (Claude: MCP_TOOL_TIMEOUT env;
+   Codex: `-c mcp_servers.hub.tool_timeout_sec=90` if needed).
+4. Two-agent debate with real CLIs and minRounds=1, maxRounds=2 on a toy topic.
