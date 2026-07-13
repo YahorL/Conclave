@@ -15,9 +15,10 @@ const port = Number(process.env["CONCLAVE_PORT"] ?? 7777);
 const dataDir = process.env["CONCLAVE_DATA_DIR"] ?? "./data";
 mkdirSync(dataDir, { recursive: true });
 
-const mailbox = new Mailbox(openDb(join(dataDir, "conclave.db")));
+const db = openDb(join(dataDir, "conclave.db"));
+const mailbox = new Mailbox(db);
 const registry = loadRegistry(join(dataDir, "registry.yaml"));
-const app = await buildServer({ mailbox, token, registry });
+const app = await buildServer({ mailbox, token, registry, db });
 await app.listen({ port, host: "0.0.0.0" });
 console.log(`conclave hub: ${registry.agents.length} agent(s) registered`);
 console.log(`conclave hub listening on :${port}`);

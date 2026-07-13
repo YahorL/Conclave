@@ -31,7 +31,7 @@ interface ThreadRow {
   created_at: string;
 }
 
-interface MessageRow {
+export interface MessageRow {
   id: number;
   thread_id: string;
   sender: string;
@@ -128,6 +128,13 @@ export class Mailbox {
     return rows.map(rowToMessage);
   }
 
+  listAllMessages(afterId = 0, limit = 500): Message[] {
+    const rows = this.db
+      .prepare("SELECT * FROM messages WHERE id > ? ORDER BY id ASC LIMIT ?")
+      .all(afterId, limit) as MessageRow[];
+    return rows.map(rowToMessage);
+  }
+
   setVerdict(threadId: string, agent: string, verdict: string): Thread {
     const thread = this.requireOpenThread(threadId);
     if (!thread.participants.includes(agent)) throw new NotAParticipantError(agent);
@@ -171,7 +178,7 @@ function rowToThread(row: ThreadRow): Thread {
   };
 }
 
-function rowToMessage(row: MessageRow): Message {
+export function rowToMessage(row: MessageRow): Message {
   return {
     id: row.id,
     threadId: row.thread_id,

@@ -32,5 +32,27 @@ function migrate(db: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages(thread_id, id);
+
+    CREATE TABLE IF NOT EXISTS debates (
+      id           TEXT PRIMARY KEY,
+      thread_id    TEXT NOT NULL REFERENCES threads(id),
+      participants TEXT NOT NULL,
+      stances      TEXT NOT NULL DEFAULT '{}',
+      min_rounds   INTEGER NOT NULL,
+      max_rounds   INTEGER NOT NULL,
+      round        INTEGER NOT NULL DEFAULT 0,
+      state        TEXT NOT NULL DEFAULT 'running',
+      created_at   TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS usage (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent         TEXT NOT NULL,
+      thread_id     TEXT,
+      input_tokens  INTEGER NOT NULL DEFAULT 0,
+      output_tokens INTEGER NOT NULL DEFAULT 0,
+      cost_usd      REAL NOT NULL DEFAULT 0,
+      ts            TEXT NOT NULL
+    );
   `);
 }

@@ -1,19 +1,22 @@
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } from "fastify";
 import websocket from "@fastify/websocket";
 import { z } from "zod";
+import type Database from "better-sqlite3";
 import type { Message, Thread, Registry } from "@conclave/shared";
-import { NewMessageSchema, NewThreadSchema } from "@conclave/shared";
+import { NewMessageSchema, NewThreadSchema, UsageReportSchema } from "@conclave/shared";
 import {
   Mailbox,
   NotAParticipantError,
   ThreadClosedError,
   ThreadNotFoundError,
 } from "./mailbox.js";
+import { listUsage, recordUsage } from "./usage.js";
 
 export interface ServerOptions {
   mailbox: Mailbox;
   token: string;
   registry?: Registry;
+  db?: Database.Database;
 }
 
 const VerdictBodySchema = z.object({
@@ -105,6 +108,29 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const query = req.query as { machine?: string };
     if (!query.machine) return registry;
     return { agents: registry.agents.filter((a) => a.machine === query.machine) };
+  });
+
+  app.get("/api/messages", async (req) => {
+    const query = req.query as { after?: string; limit?: string };
+    const after = Number(query.after ?? 0);
+    const limit = Number(query.limit ?? 500);
+    return mailbox.listAllMessages(
+      Number.isFinite(after) ? after : 0,
+      Number.isFinite(limit) ? Math.min(limit, 500) : 500,
+    );
+  });
+
+  app.post("/api/usage", async (req, reply) => {
+    if (!opts.db) return reply.code(503).send({ error: "usage store not configured" });
+    const body = parseOr400(UsageReportSchema, req.body, reply);
+    if (!body) return;
+    recordUsage(opts.db, body);
+    return reply.code(201).send({ ok: true });
+  });
+
+  app.get("/api/usage", async (_req, reply) => {
+    if (!opts.db) return reply.code(503).send({ error: "usage store not configured" });
+    return listUsage(opts.db);
   });
 
   app.get("/ws", { websocket: true }, (socket) => {
