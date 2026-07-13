@@ -8,3 +8,16 @@
   flex-direction: column;
   gap: 16px;
 }
+.typing {
+  color: var(--text-secondary-2);
+  font-size: 12px;
+}
+.cursor {
+  margin-left: 4px;
+  animation: blink 1.1s step-end infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
