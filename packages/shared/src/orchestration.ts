@@ -26,6 +26,34 @@ export const UsageReportSchema = z.object({
   costUsd: z.number().nonnegative().default(0),
 });
 
+export const TaskStateSchema = z.enum([
+  "queued",
+  "running",
+  "input-required",
+  "done",
+  "failed",
+]);
+
+export const TaskSchema = z.object({
+  id: z.string().min(1),
+  threadId: z.string().min(1),
+  assignee: z.string().min(1),
+  spec: z.string().min(1),
+  state: TaskStateSchema,
+  artifacts: z.array(z.string()),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const NewTaskSchema = z.object({
+  assignee: z.string().min(1),
+  spec: z.string().min(1),
+  workspace: z.string().optional(),
+});
+
 export type TurnRequest = z.infer<typeof TurnRequestSchema>;
 export type NewDebate = z.infer<typeof NewDebateSchema>;
 export type UsageReport = z.infer<typeof UsageReportSchema>;
+export type TaskState = z.infer<typeof TaskStateSchema>;
+export type Task = z.infer<typeof TaskSchema>;
+export type NewTask = z.infer<typeof NewTaskSchema>;
