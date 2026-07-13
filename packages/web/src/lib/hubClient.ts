@@ -1,5 +1,5 @@
 import type {
-  AgentConfig, AgentStatus, Message, NewMessage, NewTask, Registry, Task, Thread, UsageSummary,
+  AgentConfig, AgentStatus, Artifact, Message, NewMessage, NewTask, Registry, Task, Thread, UsageSummary,
 } from "@conclave/shared";
 import { config } from "./config.js";
 
@@ -29,4 +29,8 @@ export const hubClient = {
   createTask: (input: NewTask) => req<Task>("POST", "/api/tasks", input),
   getTask: (id: string) => req<Task>("GET", `/api/tasks/${id}`),
   listTasks: () => req<Task[]>("GET", "/api/tasks"),
+  listArtifacts: () => req<Artifact[]>("GET", "/api/artifacts"),
+  getArtifact: (id: string) => req<Artifact>("GET", `/api/artifacts/${id}`),
+  artifactBlobUrl: (id: string) =>
+    `/api/artifacts/${id}/blob${config.token ? `?token=${encodeURIComponent(config.token)}` : ""}`,
 };
