@@ -103,6 +103,33 @@ export function buildBridgeServer(
     },
   );
 
+  server.registerTool(
+    "create_artifact",
+    {
+      description:
+        "Create a durable file artifact (plan, ticket, diff, code) from text content and attach it to the thread.",
+      inputSchema: {
+        name: z.string().min(1).describe("Artifact file name, e.g. plan.md"),
+        mime: z.string().min(1).optional().describe("MIME type; defaults to text/plain"),
+        content: z.string().min(1).describe("Artifact text content"),
+      },
+    },
+    async ({ name, mime, content }) => {
+      try {
+        const artifact = await client.createArtifact({
+          name, content, ...(mime ? { mime } : {}), createdBy: agentId,
+        });
+        await client.postMessage(threadId, {
+          from: agentId, to: [], type: "file",
+          body: `created artifact: ${name}`, artifacts: [artifact.id],
+        });
+        return ok(artifact);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
   return server;
 }
 

@@ -1,6 +1,7 @@
 import type {
   AgentConfig,
   AgentStatusReport,
+  Artifact,
   Message,
   NewMessage,
   Registry,
@@ -84,5 +85,14 @@ export class HubClient {
 
   async setTaskState(id: string, state: TaskState): Promise<void> {
     await this.request("POST", `/api/tasks/${id}/state`, { state });
+  }
+
+  createArtifact(input: {
+    name: string;
+    content: string;
+    mime?: string;
+    createdBy?: string;
+  }): Promise<Artifact> {
+    return this.request("POST", "/api/artifacts", input);
   }
 }

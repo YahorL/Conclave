@@ -13,6 +13,7 @@ export const HUB_MCP_TOOLS = [
   "mcp__hub__check_inbox",
   "mcp__hub__wait_for_reply",
   "mcp__hub__end_thread",
+  "mcp__hub__create_artifact",
 ];
 
 const DEFAULT_BRIDGE = {
