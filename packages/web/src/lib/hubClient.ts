@@ -1,5 +1,5 @@
 import type {
-  AgentConfig, AgentStatus, Message, NewMessage, Registry, Thread, UsageSummary,
+  AgentConfig, AgentStatus, Message, NewMessage, NewTask, Registry, Task, Thread, UsageSummary,
 } from "@conclave/shared";
 import { config } from "./config.js";
 
@@ -26,4 +26,7 @@ export const hubClient = {
   getRegistry: async () => (await req<Registry>("GET", "/api/registry")).agents as AgentConfig[],
   getStatus: () => req<AgentStatus[]>("GET", "/api/status"),
   getUsageSummary: () => req<UsageSummary>("GET", "/api/usage/summary"),
+  createTask: (input: NewTask) => req<Task>("POST", "/api/tasks", input),
+  getTask: (id: string) => req<Task>("GET", `/api/tasks/${id}`),
+  listTasks: () => req<Task[]>("GET", "/api/tasks"),
 };

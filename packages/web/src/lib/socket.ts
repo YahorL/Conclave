@@ -1,11 +1,12 @@
-import type { AgentStatus, Message, Thread, TurnRequest } from "@conclave/shared";
+import type { AgentStatus, Message, Task, Thread, TurnRequest } from "@conclave/shared";
 import { config } from "./config.js";
 
 export type WsFrame =
   | { type: "message"; message: Message }
   | { type: "thread"; thread: Thread }
   | { type: "turn"; turn: TurnRequest }
-  | { type: "agent-status"; status: AgentStatus };
+  | { type: "agent-status"; status: AgentStatus }
+  | { type: "task"; task: Task };
 
 export function connectSocket(onFrame: (f: WsFrame) => void): () => void {
   let ws: WebSocket | null = null;

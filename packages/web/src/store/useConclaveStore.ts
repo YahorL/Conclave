@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AgentConfig, AgentStatus, Message, Thread, UsageSummary } from "@conclave/shared";
+import type { AgentConfig, AgentStatus, Message, Task, Thread, UsageSummary } from "@conclave/shared";
 import type { WsFrame } from "../lib/socket.js";
 
 interface State {
@@ -8,6 +8,7 @@ interface State {
   agents: AgentConfig[];
   statusByAgent: Record<string, AgentStatus>;
   usage: UsageSummary | null;
+  tasksById: Record<string, Task>;
   activeThreadId: string | null;
   openThreadIds: string[];
   setThreads(t: Thread[]): void;
@@ -32,6 +33,7 @@ const initial = {
   agents: [] as AgentConfig[],
   statusByAgent: {} as Record<string, AgentStatus>,
   usage: null as UsageSummary | null,
+  tasksById: {} as Record<string, Task>,
   activeThreadId: null as string | null,
   openThreadIds: [] as string[],
 };
@@ -72,6 +74,8 @@ export const useConclaveStore = create<State>((set) => ({
         }
         case "agent-status":
           return { statusByAgent: { ...s.statusByAgent, [f.status.agent]: f.status } };
+        case "task":
+          return { tasksById: { ...s.tasksById, [f.task.id]: f.task } };
         case "turn":
           return {};
         default:
