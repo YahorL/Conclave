@@ -125,4 +125,30 @@ describe("DebateOrchestrator", () => {
     expect(rec.stances["b"]).toBe("skeptic");
     return orch.idle();
   });
+
+  it("does not lose synchronous replies (no false timeout verdicts)", async () => {
+    const orch = new DebateOrchestrator(mailbox, store, {
+      turnTimeoutMs: 300, finaleTimeoutMs: 200,
+    });
+    // synchronous fake daemon: replies/verdicts INSIDE the turn event dispatch
+    const counts = new Map<string, number>();
+    mailbox.events.on("turn", (turn: TurnRequest) => {
+      const count = (counts.get(turn.agentId) ?? 0) + 1;
+      counts.set(turn.agentId, count);
+      if (count < 2) {
+        mailbox.appendMessage(turn.threadId, {
+          from: turn.agentId, to: [], type: "text", body: `sync ${count}`, artifacts: [],
+        });
+      } else {
+        mailbox.setVerdict(turn.threadId, turn.agentId, "approve");
+      }
+    });
+    const rec = orch.startDebate({
+      topic: "sync race", participants: ["a", "b"], minRounds: 1, maxRounds: 3,
+    });
+    await orch.idle();
+    const thread = mailbox.getThread(rec.threadId)!;
+    expect(thread.verdicts).toEqual({ a: "approve", b: "approve" });
+    expect(Object.values(thread.verdicts).some((v) => v.includes("no-response"))).toBe(false);
+  }, 15_000);
 });

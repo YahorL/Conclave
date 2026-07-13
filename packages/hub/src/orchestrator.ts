@@ -28,6 +28,18 @@ export function waitForAgentActivity(
   timeoutMs: number,
 ): Promise<"replied" | "verdict" | "settled" | "timeout"> {
   return new Promise((resolve) => {
+    // A reply/verdict may already exist by the time we're called (synchronous
+    // turn consumers) — check current state before subscribing to events.
+    const thread = mailbox.getThread(threadId);
+    if (thread) {
+      if (thread.verdicts[agentId] !== undefined) return resolve("verdict");
+      if (thread.state !== "open") return resolve("settled");
+      const already = mailbox
+        .listMessages(threadId, afterMessageId)
+        .some((m) => m.from === agentId);
+      if (already) return resolve("replied");
+    }
+
     const timer = setTimeout(() => done("timeout"), timeoutMs);
     function onMessage(m: Message): void {
       if (m.threadId === threadId && m.from === agentId && m.id > afterMessageId) done("replied");
@@ -140,11 +152,15 @@ export class DebateOrchestrator {
           this.mailbox, rec.threadId, agent, lastSeen, this.turnTimeoutMs,
         );
         if (outcome === "timeout") {
-          this.mailbox.setVerdict(rec.threadId, agent, "no-response (timeout)");
-          this.mailbox.appendMessage(rec.threadId, {
-            from: "orchestrator", to: [], type: "status",
-            body: `${agent} did not respond within the turn timeout`, artifacts: [],
-          });
+          const recheck = this.mailbox.getThread(rec.threadId);
+          const alreadySettled = recheck?.verdicts[agent] !== undefined || recheck?.state !== "open";
+          if (!alreadySettled) {
+            this.mailbox.setVerdict(rec.threadId, agent, "no-response (timeout)");
+            this.mailbox.appendMessage(rec.threadId, {
+              from: "orchestrator", to: [], type: "status",
+              body: `${agent} did not respond within the turn timeout`, artifacts: [],
+            });
+          }
         }
         if (outcome === "settled") break;
       }
