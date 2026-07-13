@@ -16,7 +16,7 @@ import {
   ThreadClosedError,
   ThreadNotFoundError,
 } from "./mailbox.js";
-import { listUsage, recordUsage } from "./usage.js";
+import { getUsageSummary, listUsage, recordUsage } from "./usage.js";
 import type { DebateOrchestrator } from "./orchestrator.js";
 import type { AgentStatusStore } from "./status.js";
 
@@ -27,6 +27,7 @@ export interface ServerOptions {
   db?: Database.Database;
   orchestrator?: DebateOrchestrator;
   status?: AgentStatusStore;
+  budgetUsd?: number;
 }
 
 const VerdictBodySchema = z.object({
@@ -141,6 +142,11 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   app.get("/api/usage", async (_req, reply) => {
     if (!opts.db) return reply.code(503).send({ error: "usage store not configured" });
     return listUsage(opts.db);
+  });
+
+  app.get("/api/usage/summary", async (_req, reply) => {
+    if (!opts.db) return reply.code(503).send({ error: "usage store not configured" });
+    return getUsageSummary(opts.db, opts.budgetUsd ?? 25);
   });
 
   app.post("/api/status", async (req, reply) => {
