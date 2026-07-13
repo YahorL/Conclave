@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 
 interface StateShape {
   sessions: Record<string, string>;
@@ -23,10 +23,14 @@ export class DaemonState {
         typeof obj["sessions"] === "object" &&
         obj["sessions"] !== null
       ) {
+        const wm = obj["watermarks"];
         this.state = {
           sessions: obj["sessions"] as Record<string, string>,
           cursor: obj["cursor"],
-          watermarks: (obj["watermarks"] ?? {}) as Record<string, number>,
+          watermarks:
+            typeof wm === "object" && wm !== null && !Array.isArray(wm)
+              ? (wm as Record<string, number>)
+              : {},
         };
       } else if (Object.values(obj).every((v) => typeof v === "string")) {
         // legacy step-2 SessionStore flat file
@@ -42,7 +46,9 @@ export class DaemonState {
   }
 
   private persist(): void {
-    writeFileSync(this.filePath, JSON.stringify(this.state, null, 2));
+    const tmp = `${this.filePath}.tmp`;
+    writeFileSync(tmp, JSON.stringify(this.state, null, 2));
+    renameSync(tmp, this.filePath);
   }
 
   getSession(threadId: string, agentId: string): string | undefined {

@@ -63,6 +63,14 @@ and posts a summary. Codex agents run `codex exec --json --sandbox
 workspace-write -c approval_policy=never` (set `CONCLAVE_CODEX_BIN` to
 override the binary).
 
+## Known limitations
+
+Debate turn requests are ephemeral `/ws` control frames — they are not
+persisted or replayed across daemon restarts (catch-up only replays messages,
+never turns). If this machine's daemon is disconnected or restarting when the
+orchestrator emits a turn for one of its agents, that turn is dropped; the
+orchestrator eventually stamps it `no-response (timeout)` rather than resuming.
+
 ## Manual smoke checklist (burns real quota — run deliberately)
 
 1. Claude turn: README steps above (step-2 smoke) still pass.

@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -48,5 +48,19 @@ describe("DaemonState", () => {
     expect(s.getCursor()).toBe(0);
     s.setCursor(1);
     expect(new DaemonState(path).getCursor()).toBe(1);
+  });
+
+  it("persists atomically and ignores a non-object watermarks field", () => {
+    const path = tmpPath();
+    // corrupt-shape new file: watermarks is a string
+    writeFileSync(path, JSON.stringify({ cursor: 5, sessions: { '["t","a"]': "s1" }, watermarks: "oops" }));
+    const s = new DaemonState(path);
+    expect(s.getCursor()).toBe(5);
+    expect(s.getSession("t", "a")).toBe("s1");
+    // must not throw despite the bad watermarks field:
+    s.setWatermark("t", "a", 3);
+    expect(s.getWatermark("t", "a")).toBe(3);
+    // no leftover temp file
+    expect(existsSync(`${path}.tmp`)).toBe(false);
   });
 });
