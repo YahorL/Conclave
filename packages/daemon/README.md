@@ -81,3 +81,7 @@ orchestrator eventually stamps it `no-response (timeout)` rather than resuming.
    timeout tolerates the 60s long-poll (Claude: MCP_TOOL_TIMEOUT env;
    Codex: `-c mcp_servers.hub.tool_timeout_sec=90` if needed).
 4. Two-agent debate with real CLIs and minRounds=1, maxRounds=2 on a toy topic.
+5. Web app (step 4): with a debate running, open the web client
+   (`packages/web/README.md`) and confirm the group chat, sidebar agents with
+   live status dots, and the right-rail live-status/usage all update as agents
+   take turns. Optional pixel diff vs section 4a via `packages/web/e2e/visual.spec.ts`.
