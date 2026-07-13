@@ -80,4 +80,20 @@ describe("HubSocket", () => {
     await until(() => seen.some((m) => m.body === "after restart"));
     expect(mailbox).toBeDefined();
   }, 15_000);
+
+  it("start() is idempotent — no duplicate delivery after calling it twice", async () => {
+    const { mailbox, url } = await liveHub();
+    const seen: Message[] = [];
+    socket = new HubSocket({ hubUrl: url, token: TOKEN, onMessage: (m) => seen.push(m) });
+    socket.start();
+    socket.start();
+    await sleep(400);
+    const t = mailbox.createThread({ kind: "chat", participants: ["you"] });
+    mailbox.appendMessage(t.id, {
+      from: "you", to: [], type: "text", body: "once only", artifacts: [],
+    });
+    await until(() => seen.length >= 1);
+    await sleep(300); // window for a duplicate to arrive
+    expect(seen).toHaveLength(1);
+  });
 });
