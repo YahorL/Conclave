@@ -17,3 +17,12 @@
   font-size: 11px;
   color: var(--text-muted);
 }
+.state[data-task-state="running"] {
+  color: var(--live);
+}
+.state[data-task-state="failed"] {
+  color: var(--danger);
+}
+.state[data-task-state="done"] {
+  color: var(--text-secondary-2);
+}

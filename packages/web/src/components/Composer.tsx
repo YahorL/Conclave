@@ -8,6 +8,9 @@ export function Composer(): JSX.Element {
   const activeThreadId = useConclaveStore((s) => s.activeThreadId);
   const threads = useConclaveStore((s) => s.threads);
   const agents = useConclaveStore((s) => s.agents);
+  const applyFrame = useConclaveStore((s) => s.applyFrame);
+  const setActiveThread = useConclaveStore((s) => s.setActiveThread);
+  const setMessages = useConclaveStore((s) => s.setMessages);
 
   const active = threads.find((t) => t.id === activeThreadId);
   const participantAgents = useMemo(
@@ -22,7 +25,22 @@ export function Composer(): JSX.Element {
 
   const send = async (): Promise<void> => {
     const body = text.trim();
-    if (!body || !activeThreadId) return;
+    if (!body) return;
+
+    const taskMatch = /^\/task\s+@([\w-]+)\s+([\s\S]+)$/.exec(body);
+    if (taskMatch) {
+      const [, assignee, spec] = taskMatch;
+      if (!agents.some((a) => a.id === assignee)) return; // unknown agent — leave text for correction
+      setText("");
+      const task = await hubClient.createTask({ assignee, spec, workspace: active?.workspace ?? undefined });
+      const thread = await hubClient.getThread(task.threadId);
+      applyFrame({ type: "thread", thread });
+      setActiveThread(task.threadId);
+      setMessages(task.threadId, await hubClient.listMessages(task.threadId));
+      return;
+    }
+
+    if (!activeThreadId) return;
     const ids = new Set(participantAgents.map((a) => a.id));
     const to = [
       ...new Set([...body.matchAll(/@([\w-]+)/g)].map((m) => m[1]).filter((id) => ids.has(id))),
