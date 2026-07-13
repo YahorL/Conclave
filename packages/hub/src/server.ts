@@ -2,8 +2,14 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } f
 import websocket from "@fastify/websocket";
 import { z } from "zod";
 import type Database from "better-sqlite3";
-import type { Message, Thread, TurnRequest, Registry } from "@conclave/shared";
-import { NewDebateSchema, NewMessageSchema, NewThreadSchema, UsageReportSchema } from "@conclave/shared";
+import type { AgentStatus, Message, Thread, TurnRequest, Registry } from "@conclave/shared";
+import {
+  AgentStatusReportSchema,
+  NewDebateSchema,
+  NewMessageSchema,
+  NewThreadSchema,
+  UsageReportSchema,
+} from "@conclave/shared";
 import {
   Mailbox,
   NotAParticipantError,
@@ -12,6 +18,7 @@ import {
 } from "./mailbox.js";
 import { listUsage, recordUsage } from "./usage.js";
 import type { DebateOrchestrator } from "./orchestrator.js";
+import type { AgentStatusStore } from "./status.js";
 
 export interface ServerOptions {
   mailbox: Mailbox;
@@ -19,6 +26,7 @@ export interface ServerOptions {
   registry?: Registry;
   db?: Database.Database;
   orchestrator?: DebateOrchestrator;
+  status?: AgentStatusStore;
 }
 
 const VerdictBodySchema = z.object({
@@ -135,6 +143,18 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     return listUsage(opts.db);
   });
 
+  app.post("/api/status", async (req, reply) => {
+    if (!opts.status) return reply.code(503).send({ error: "status store not configured" });
+    const body = parseOr400(AgentStatusReportSchema, req.body, reply);
+    if (!body) return;
+    return reply.code(201).send(opts.status.set(body));
+  });
+
+  app.get("/api/status", async (_req, reply) => {
+    if (!opts.status) return reply.code(503).send({ error: "status store not configured" });
+    return opts.status.list();
+  });
+
   app.post("/api/debates", async (req, reply) => {
     if (!opts.orchestrator) return reply.code(503).send({ error: "orchestrator not configured" });
     const body = parseOr400(NewDebateSchema, req.body, reply);
@@ -152,13 +172,18 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const onTurn = (turn: TurnRequest): void => {
       socket.send(JSON.stringify({ type: "turn", turn }));
     };
+    const onStatus = (status: AgentStatus): void => {
+      socket.send(JSON.stringify({ type: "agent-status", status }));
+    };
     mailbox.events.on("message", onMessage);
     mailbox.events.on("thread", onThread);
     mailbox.events.on("turn", onTurn);
+    if (opts.status) opts.status.events.on("agent-status", onStatus);
     socket.on("close", () => {
       mailbox.events.off("message", onMessage);
       mailbox.events.off("thread", onThread);
       mailbox.events.off("turn", onTurn);
+      if (opts.status) opts.status.events.off("agent-status", onStatus);
     });
   });
 
