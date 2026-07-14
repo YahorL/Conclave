@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+.git
+.claude
+data
+data-*
+*.log
+conclave-grants.json
+docs/superpowers

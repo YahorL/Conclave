@@ -1,0 +1,21 @@
+# Conclave hub. Build + run:
+#   CONCLAVE_TOKEN=$(openssl rand -hex 16) docker compose up -d --build
+# Then open http://localhost:7777 and run a daemon on each machine (docs/DEPLOY.md).
+services:
+  hub:
+    build: .
+    image: conclave-hub
+    container_name: conclave-hub
+    ports:
+      - "7777:7777"
+    environment:
+      # Required — the shared secret clients + daemons authenticate with.
+      CONCLAVE_TOKEN: ${CONCLAVE_TOKEN:?set CONCLAVE_TOKEN (e.g. export CONCLAVE_TOKEN=$(openssl rand -hex 16))}
+      CONCLAVE_BUDGET_USD: ${CONCLAVE_BUDGET_USD:-25}
+    volumes:
+      # SQLite db + registry.yaml live here; put your agent registry at ./data/registry.yaml.
+      - conclave-data:/data
+    restart: unless-stopped
+
+volumes:
+  conclave-data:
