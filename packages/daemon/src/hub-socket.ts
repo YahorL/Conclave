@@ -1,8 +1,10 @@
 import WebSocket from "ws";
 import {
+  FsRequestSchema,
   MessageSchema,
   TaskSchema,
   TurnRequestSchema,
+  type FsRequest,
   type Message,
   type Task,
   type TurnRequest,
@@ -15,6 +17,7 @@ export interface HubSocketOptions {
   onMessage: (m: Message) => void;
   onTurn?: (turn: TurnRequest) => void;
   onTask?: (task: Task) => void;
+  onFsRequest?: (req: FsRequest) => void;
   reconnectDelayMs?: number;
 }
 
@@ -41,6 +44,10 @@ export class HubSocket {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = undefined;
     this.ws?.close();
+  }
+
+  send(frame: unknown): void {
+    this.ws?.send(JSON.stringify(frame));
   }
 
   private connect(): void {
@@ -79,6 +86,11 @@ export class HubSocket {
         if (candidate.type === "task" && this.opts.onTask) {
           const parsedTask = TaskSchema.safeParse((candidate as { task?: unknown }).task);
           if (parsedTask.success) this.opts.onTask(parsedTask.data);
+          return;
+        }
+        if (candidate.type === "fs-request" && this.opts.onFsRequest) {
+          const parsedReq = FsRequestSchema.safeParse(frame);
+          if (parsedReq.success) this.opts.onFsRequest(parsedReq.data);
           return;
         }
       } catch {

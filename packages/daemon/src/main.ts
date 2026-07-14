@@ -6,6 +6,8 @@ import { TurnQueue } from "./turn-queue.js";
 import { ClaudeCodeAdapter } from "./claude-adapter.js";
 import { CodexAdapter } from "./codex-adapter.js";
 import { AgentLoop, runCatchUp, runTaskCatchUp } from "./agent-loop.js";
+import { GrantStore } from "./grants.js";
+import { FileService } from "./file-service.js";
 
 async function main(): Promise<void> {
   const cfg = loadDaemonConfig(process.env);
@@ -18,6 +20,8 @@ async function main(): Promise<void> {
   for (const a of agents) console.log(`agent ${a.id} → ${a.workspace}`);
 
   const state = new DaemonState(cfg.stateFile);
+  const grants = new GrantStore(process.env["CONCLAVE_GRANTS_FILE"] ?? "./conclave-grants.json");
+  const fileService = new FileService(grants);
   const loop = new AgentLoop({
     agents,
     hub,
@@ -40,6 +44,7 @@ async function main(): Promise<void> {
       if (caught > 0) console.log(`catch-up: processed ${caught} message(s)`);
       const caughtTasks = await runTaskCatchUp(hub, agents, (t) => loop.handleTask(t));
       if (caughtTasks > 0) console.log(`task catch-up: picked up ${caughtTasks} task(s)`);
+      socket.send({ type: "hello", machine: cfg.machine, files: grants.roots() });
     },
     onMessage: (m) => {
       loop.handleMessage(m);
@@ -49,6 +54,9 @@ async function main(): Promise<void> {
     },
     onTask: (task) => {
       loop.handleTask(task);
+    },
+    onFsRequest: (req) => {
+      void (async () => socket.send({ type: "fs-response", ...(await fileService.handle(req)) }))();
     },
   });
   socket.start();

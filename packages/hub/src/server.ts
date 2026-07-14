@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } from "fastify";
 import websocket from "@fastify/websocket";
 import { z } from "zod";
@@ -5,6 +6,9 @@ import type Database from "better-sqlite3";
 import type { AgentStatus, Artifact, Message, Task, Thread, TurnRequest, Registry } from "@conclave/shared";
 import {
   AgentStatusReportSchema,
+  FsOpSchema,
+  FsResponseSchema,
+  HelloSchema,
   NewArtifactSchema,
   NewDebateSchema,
   NewMessageSchema,
@@ -24,6 +28,7 @@ import type { DebateOrchestrator } from "./orchestrator.js";
 import type { AgentStatusStore } from "./status.js";
 import { TaskStore, createTask, InvalidTransitionError, UnknownAssigneeError } from "./tasks.js";
 import { ArtifactStore, ArtifactTooLargeError } from "./artifacts.js";
+import { MachineRegistry, PendingRequests } from "./fs-tunnel.js";
 
 export interface ServerOptions {
   mailbox: Mailbox;
@@ -47,6 +52,8 @@ const IdParamsSchema = z.object({ id: z.string().min(1) });
 export async function buildServer(opts: ServerOptions): Promise<FastifyInstance> {
   const { mailbox, token, registry: registryOpt } = opts;
   const registry: Registry = registryOpt ?? { agents: [] };
+  const machines = new MachineRegistry();
+  const pending = new PendingRequests();
   const app = Fastify();
   await app.register(websocket);
 
@@ -252,6 +259,42 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       .send(blob);
   });
 
+  app.get("/api/machines", async () => machines.list());
+
+  app.post("/api/fs/:machine/:op", async (req, reply) => {
+    const params = req.params as { machine: string; op: string };
+    const op = FsOpSchema.safeParse(params.op);
+    if (!op.success) return reply.code(400).send({ error: "invalid op" });
+    const conn = machines.get(params.machine);
+    if (!conn) return reply.code(503).send({ error: `machine unreachable: ${params.machine}` });
+    const body = (req.body ?? {}) as { path?: string; content?: string; threadId?: string };
+    if (!body.path) return reply.code(400).send({ error: "path required" });
+    const id = randomUUID();
+    conn.socket.send(
+      JSON.stringify({
+        type: "fs-request", id, op: op.data, path: body.path,
+        content: body.content, threadId: body.threadId,
+      }),
+    );
+    let res;
+    try {
+      res = await pending.create(id, 10_000);
+    } catch {
+      return reply.code(504).send({ error: "fs request timed out" });
+    }
+    if (!res.ok) return reply.code(422).send({ error: res.error ?? "fs error" });
+    if (op.data === "write" && body.threadId) {
+      try {
+        mailbox.appendMessage(body.threadId, {
+          from: "you", to: [], type: "status", body: `edited ${body.path}`, artifacts: [],
+        });
+      } catch {
+        /* thread may be closed/absent — best-effort log */
+      }
+    }
+    return res.result;
+  });
+
   app.get("/ws", { websocket: true }, (socket) => {
     const onMessage = (message: Message): void => {
       socket.send(JSON.stringify({ type: "message", message }));
@@ -277,6 +320,24 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     mailbox.events.on("task", onTask);
     mailbox.events.on("artifact", onArtifact);
     if (opts.status) opts.status.events.on("agent-status", onStatus);
+
+    socket.on("message", (raw: Buffer) => {
+      let frame: unknown;
+      try {
+        frame = JSON.parse(String(raw));
+      } catch {
+        return;
+      }
+      const f = frame as { type?: unknown };
+      if (f.type === "hello") {
+        const parsed = HelloSchema.safeParse(frame);
+        if (parsed.success) machines.register(parsed.data.machine, socket, parsed.data.files);
+      } else if (f.type === "fs-response") {
+        const parsed = FsResponseSchema.safeParse(frame);
+        if (parsed.success) pending.settle(parsed.data.id, parsed.data);
+      }
+    });
+
     socket.on("close", () => {
       mailbox.events.off("message", onMessage);
       mailbox.events.off("thread", onThread);
@@ -284,6 +345,7 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       mailbox.events.off("task", onTask);
       mailbox.events.off("artifact", onArtifact);
       if (opts.status) opts.status.events.off("agent-status", onStatus);
+      machines.unregisterSocket(socket);
     });
   });
 
