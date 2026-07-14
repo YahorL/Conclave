@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } from "fastify";
 import websocket from "@fastify/websocket";
+import fastifyStatic from "@fastify/static";
 import { z } from "zod";
 import type Database from "better-sqlite3";
 import type { AgentStatus, Artifact, Message, Task, Thread, TurnRequest, Registry, Workspace } from "@conclave/shared";
@@ -43,6 +46,7 @@ export interface ServerOptions {
   tasks?: TaskStore;
   artifacts?: ArtifactStore;
   workspaces?: WorkspaceStore;
+  webDir?: string;
 }
 
 const VerdictBodySchema = z.object({
@@ -61,7 +65,11 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   await app.register(websocket);
 
   app.addHook("onRequest", async (req, reply) => {
-    if (req.url.split("?")[0] === "/health") return;
+    const path = req.url.split("?")[0];
+    if (path === "/health") return;
+    // When the hub serves the web app, its static files + SPA routes are public;
+    // /api and the /ws upgrade still require the token.
+    if (opts.webDir && req.method === "GET" && !path.startsWith("/api") && path !== "/ws") return;
     const header = req.headers.authorization;
     const query = req.query as { token?: string };
     if (header === `Bearer ${token}` || query.token === token) return;
@@ -376,6 +384,22 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       machines.unregisterSocket(socket);
     });
   });
+
+  if (opts.webDir && existsSync(join(opts.webDir, "index.html"))) {
+    const indexHtml = readFileSync(join(opts.webDir, "index.html"), "utf8").replaceAll(
+      "CONCLAVE_TOKEN_PLACEHOLDER",
+      token,
+    );
+    await app.register(fastifyStatic, { root: opts.webDir, index: false, wildcard: false });
+    app.get("/", async (_req, reply) => reply.type("text/html").send(indexHtml));
+    app.setNotFoundHandler((req, reply) => {
+      const path = req.url.split("?")[0];
+      if (req.method === "GET" && !path.startsWith("/api") && path !== "/ws" && path !== "/health") {
+        return reply.type("text/html").send(indexHtml);
+      }
+      return reply.code(404).send({ error: "not found" });
+    });
+  }
 
   return app;
 }
