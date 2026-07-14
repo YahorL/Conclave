@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { openDb } from "./db.js";
 import { Mailbox } from "./mailbox.js";
@@ -39,5 +39,5 @@ const app = await buildServer({
 });
 await app.listen({ port, host: "0.0.0.0" });
 console.log(`conclave hub: ${registry.agents.length} agent(s) registered`);
-if (webDir) console.log(`conclave hub: serving web app from ${webDir}`);
+if (webDir && existsSync(join(webDir, "index.html"))) console.log(`conclave hub: serving web app from ${webDir}`);
 console.log(`conclave hub listening on :${port}`);

@@ -19,6 +19,12 @@ Open `http://localhost:7777`. The token is injected into the served page at
 runtime (no rebuild needed to set or rotate it — restart the container after
 changing `CONCLAVE_TOKEN`).
 
+> **Security note:** because the token is embedded in the served page, *anyone
+> who can load the web app can use the full API* — the token only protects
+> against clients that can't reach the page. The compose file therefore binds
+> to `127.0.0.1` by default. Only expose the port on networks where every
+> client is trusted (your tailnet, a firewalled LAN) — never the open internet.
+
 State (SQLite db + your agent registry) lives in the `conclave-data` volume,
 mounted at `/data`. Put your agent registry at `/data/registry.yaml` (see below).
 
