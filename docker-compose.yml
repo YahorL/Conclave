@@ -6,8 +6,13 @@ services:
     build: .
     image: conclave-hub
     container_name: conclave-hub
+    # Forwards SIGTERM through the pnpm→tsx chain so `docker stop` is graceful.
+    init: true
     ports:
-      - "7777:7777"
+      # Localhost-only by default: the served web page contains the auth token,
+      # so anyone who can load it can use the API. Expose via Tailscale/LAN
+      # deliberately (docs/DEPLOY.md) — e.g. change to "7777:7777" behind a firewall.
+      - "127.0.0.1:7777:7777"
     environment:
       # Required — the shared secret clients + daemons authenticate with.
       CONCLAVE_TOKEN: ${CONCLAVE_TOKEN:?set CONCLAVE_TOKEN (e.g. export CONCLAVE_TOKEN=$(openssl rand -hex 16))}

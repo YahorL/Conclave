@@ -399,6 +399,8 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       }
       return reply.code(404).send({ error: "not found" });
     });
+  } else if (opts.webDir) {
+    console.warn(`conclave hub: CONCLAVE_WEB_DIR is set but ${join(opts.webDir, "index.html")} does not exist — web app NOT served`);
   }
 
   return app;
