@@ -16,6 +16,8 @@ export function startSync(): () => void {
     store.setAgents(agents);
     store.setStatuses(statuses);
     if (usage) store.setUsage(usage);
+    const artifacts = await hubClient.listArtifacts().catch(() => []);
+    for (const a of artifacts) store.applyFrame({ type: "artifact", artifact: a });
     if (!useConclaveStore.getState().activeThreadId && threads.length > 0) {
       store.setActiveThread(threads[0].id);
       store.setMessages(threads[0].id, await hubClient.listMessages(threads[0].id));

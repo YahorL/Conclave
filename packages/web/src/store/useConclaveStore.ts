@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AgentConfig, AgentStatus, Message, Task, Thread, UsageSummary } from "@conclave/shared";
+import type { AgentConfig, AgentStatus, Artifact, Message, Task, Thread, UsageSummary } from "@conclave/shared";
 import type { WsFrame } from "../lib/socket.js";
 
 interface State {
@@ -9,7 +9,9 @@ interface State {
   statusByAgent: Record<string, AgentStatus>;
   usage: UsageSummary | null;
   tasksById: Record<string, Task>;
+  artifactsById: Record<string, Artifact>;
   activeThreadId: string | null;
+  activeArtifactId: string | null;
   openThreadIds: string[];
   setThreads(t: Thread[]): void;
   setMessages(threadId: string, m: Message[]): void;
@@ -17,6 +19,7 @@ interface State {
   setStatuses(s: AgentStatus[]): void;
   setUsage(u: UsageSummary): void;
   setActiveThread(id: string): void;
+  setActiveArtifact(id: string | null): void;
   openThread(id: string): void;
   applyFrame(f: WsFrame): void;
   reset(): void;
@@ -34,7 +37,9 @@ const initial = {
   statusByAgent: {} as Record<string, AgentStatus>,
   usage: null as UsageSummary | null,
   tasksById: {} as Record<string, Task>,
+  artifactsById: {} as Record<string, Artifact>,
   activeThreadId: null as string | null,
+  activeArtifactId: null as string | null,
   openThreadIds: [] as string[],
 };
 
@@ -50,8 +55,10 @@ export const useConclaveStore = create<State>((set) => ({
   setActiveThread: (id) =>
     set((s) => ({
       activeThreadId: id,
+      activeArtifactId: null,
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
     })),
+  setActiveArtifact: (id) => set({ activeArtifactId: id }),
   openThread: (id) =>
     set((s) => ({
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
@@ -76,6 +83,8 @@ export const useConclaveStore = create<State>((set) => ({
           return { statusByAgent: { ...s.statusByAgent, [f.status.agent]: f.status } };
         case "task":
           return { tasksById: { ...s.tasksById, [f.task.id]: f.task } };
+        case "artifact":
+          return { artifactsById: { ...s.artifactsById, [f.artifact.id]: f.artifact } };
         case "turn":
           return {};
         default:

@@ -67,5 +67,16 @@ function migrate(db: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_tasks_assignee_state ON tasks(assignee, state);
+
+    CREATE TABLE IF NOT EXISTS artifacts (
+      id         TEXT PRIMARY KEY,
+      name       TEXT NOT NULL,
+      mime       TEXT NOT NULL,
+      size       INTEGER NOT NULL,
+      sha256     TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      blob       BLOB NOT NULL
+    );
   `);
 }

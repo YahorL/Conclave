@@ -96,3 +96,7 @@ orchestrator eventually stamps it `no-response (timeout)` rather than resuming.
    NOTE: run exactly one daemon per machine — two daemons for the same agent both
    claim the task; the loser hits the hub's `running→running` transition guard
    (no double completion, but a spurious `failed` status is posted).
+7. Artifacts (step 5): during a real agent turn/task, have the agent call the
+   create_artifact MCP tool; confirm the artifact is stored (GET /api/artifacts),
+   a `file` message is posted into the thread with the artifact id, and the web
+   ARTIFACTS sidebar lists it and opens it read-only with a working download.

@@ -10,6 +10,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import type { Message, Thread } from "@conclave/shared";
 import { openDb } from "@conclave/hub/src/db.js";
 import { Mailbox } from "@conclave/hub/src/mailbox.js";
+import { ArtifactStore } from "@conclave/hub/src/artifacts.js";
 import { buildServer } from "@conclave/hub/src/server.js";
 
 const TOKEN = "bridge-token";
@@ -26,8 +27,9 @@ describe("mcp-bridge over stdio against a live hub", () => {
 
   it("serves the four tools and round-trips them", async () => {
     const dir = mkdtempSync(join(tmpdir(), "conclave-bridge-"));
-    const mailbox = new Mailbox(openDb(join(dir, "t.db")));
-    app = await buildServer({ mailbox, token: TOKEN });
+    const db = openDb(join(dir, "t.db"));
+    const mailbox = new Mailbox(db);
+    app = await buildServer({ mailbox, token: TOKEN, artifacts: new ArtifactStore(db) });
     await app.listen({ port: 0, host: "127.0.0.1" });
     const port = (app.server.address() as AddressInfo).port;
     const thread = mailbox.createThread({
@@ -55,7 +57,7 @@ describe("mcp-bridge over stdio against a live hub", () => {
 
     const tools = await client.listTools();
     expect(tools.tools.map((t) => t.name).sort()).toEqual([
-      "check_inbox", "end_thread", "send_message", "wait_for_reply",
+      "check_inbox", "create_artifact", "end_thread", "send_message", "wait_for_reply",
     ]);
 
     const inbox = await client.callTool({ name: "check_inbox", arguments: {} });
@@ -83,6 +85,17 @@ describe("mcp-bridge over stdio against a live hub", () => {
       (inbox2.content as Array<{ type: string; text: string }>)[0]!.text,
     ) as Message[];
     expect(inbox2Msgs.map((m) => m.body)).toEqual(["ping"]);
+
+    const madeArt = await client.callTool({
+      name: "create_artifact",
+      arguments: { name: "plan.md", content: "# Plan" },
+    });
+    const artMeta = JSON.parse(
+      (madeArt.content as Array<{ type: string; text: string }>)[0]!.text,
+    ) as { id: string; name: string };
+    expect(artMeta.name).toBe("plan.md");
+    const fileMsg = mailbox.listMessages(thread.id).find((m) => m.type === "file");
+    expect(fileMsg?.artifacts).toEqual([artMeta.id]);
 
     const ended = await client.callTool({
       name: "end_thread",
