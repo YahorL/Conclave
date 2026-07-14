@@ -106,3 +106,7 @@ orchestrator eventually stamps it `no-response (timeout)` rather than resuming.
    POST /api/fs/<machine>/read returns file content, a path outside any granted
    root returns 422 (path-jail, enforced daemon-side), and an unknown machine
    returns 503. Verified locally end-to-end with a real hub + daemon.
+9. Browse-and-pick (step 5): in the web Files rail, pick a machine, expand a
+   granted root, open a file (read-only), and "＋ workspace" a folder — confirm
+   POST /api/workspaces creates it (name defaults to the folder basename) and it
+   appears as a window tab that filters the chat list.

@@ -23,6 +23,17 @@
   border-bottom: 2px solid var(--sel-bg);
   color: var(--text-primary);
 }
+.railBtn {
+  width: 32px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.railBtn:hover {
+  color: var(--text-primary);
+}
 .section {
   padding: 10px 8px;
 }

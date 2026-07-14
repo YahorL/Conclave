@@ -3,7 +3,7 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply } f
 import websocket from "@fastify/websocket";
 import { z } from "zod";
 import type Database from "better-sqlite3";
-import type { AgentStatus, Artifact, Message, Task, Thread, TurnRequest, Registry } from "@conclave/shared";
+import type { AgentStatus, Artifact, Message, Task, Thread, TurnRequest, Registry, Workspace } from "@conclave/shared";
 import {
   AgentStatusReportSchema,
   FsOpSchema,
@@ -14,6 +14,7 @@ import {
   NewMessageSchema,
   NewTaskSchema,
   NewThreadSchema,
+  NewWorkspaceSchema,
   TaskStateSchema,
   UsageReportSchema,
 } from "@conclave/shared";
@@ -28,6 +29,7 @@ import type { DebateOrchestrator } from "./orchestrator.js";
 import type { AgentStatusStore } from "./status.js";
 import { TaskStore, createTask, InvalidTransitionError, UnknownAssigneeError } from "./tasks.js";
 import { ArtifactStore, ArtifactTooLargeError } from "./artifacts.js";
+import { WorkspaceStore } from "./workspaces.js";
 import { MachineRegistry, PendingRequests } from "./fs-tunnel.js";
 
 export interface ServerOptions {
@@ -40,6 +42,7 @@ export interface ServerOptions {
   budgetUsd?: number;
   tasks?: TaskStore;
   artifacts?: ArtifactStore;
+  workspaces?: WorkspaceStore;
 }
 
 const VerdictBodySchema = z.object({
@@ -259,6 +262,26 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       .send(blob);
   });
 
+  app.post("/api/workspaces", async (req, reply) => {
+    if (!opts.workspaces) return reply.code(503).send({ error: "workspaces store not configured" });
+    const body = parseOr400(NewWorkspaceSchema, req.body, reply);
+    if (!body) return;
+    const ws = opts.workspaces.create(body);
+    mailbox.events.emit("workspace", ws);
+    return reply.code(201).send(ws);
+  });
+  app.get("/api/workspaces", async (_req, reply) => {
+    if (!opts.workspaces) return reply.code(503).send({ error: "workspaces store not configured" });
+    return opts.workspaces.list();
+  });
+  app.get("/api/workspaces/:id", async (req, reply) => {
+    if (!opts.workspaces) return reply.code(503).send({ error: "workspaces store not configured" });
+    const { id } = IdParamsSchema.parse(req.params);
+    const ws = opts.workspaces.get(id);
+    if (!ws) return reply.code(404).send({ error: `workspace not found: ${id}` });
+    return ws;
+  });
+
   app.get("/api/machines", async () => machines.list());
 
   app.post("/api/fs/:machine/:op", async (req, reply) => {
@@ -314,11 +337,15 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const onArtifact = (artifact: Artifact): void => {
       socket.send(JSON.stringify({ type: "artifact", artifact }));
     };
+    const onWorkspace = (workspace: Workspace): void => {
+      socket.send(JSON.stringify({ type: "workspace", workspace }));
+    };
     mailbox.events.on("message", onMessage);
     mailbox.events.on("thread", onThread);
     mailbox.events.on("turn", onTurn);
     mailbox.events.on("task", onTask);
     mailbox.events.on("artifact", onArtifact);
+    mailbox.events.on("workspace", onWorkspace);
     if (opts.status) opts.status.events.on("agent-status", onStatus);
 
     socket.on("message", (raw: Buffer) => {
@@ -344,6 +371,7 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       mailbox.events.off("turn", onTurn);
       mailbox.events.off("task", onTask);
       mailbox.events.off("artifact", onArtifact);
+      mailbox.events.off("workspace", onWorkspace);
       if (opts.status) opts.status.events.off("agent-status", onStatus);
       machines.unregisterSocket(socket);
     });
