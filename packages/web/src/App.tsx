@@ -9,11 +9,13 @@ import { GroupChat } from "./components/GroupChat.js";
 import { Composer } from "./components/Composer.js";
 import { StatusStrip } from "./components/StatusStrip.js";
 import { ArtifactView } from "./components/ArtifactView.js";
+import { FsFileView } from "./components/FsFileView.js";
 import styles from "./App.module.css";
 
 export function App(): JSX.Element {
   useEffect(() => startSync(), []);
   const activeArtifactId = useConclaveStore((s) => s.activeArtifactId);
+  const activeFsFile = useConclaveStore((s) => s.activeFsFile);
   return (
     <div className={styles.app} data-testid="app-root">
       <WindowStrip />
@@ -22,7 +24,9 @@ export function App(): JSX.Element {
         <main className={styles.main}>
           <SessionTabs />
           <ContextToolbar />
-          {activeArtifactId ? (
+          {activeFsFile ? (
+            <FsFileView />
+          ) : activeArtifactId ? (
             <ArtifactView />
           ) : (
             <>
