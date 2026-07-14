@@ -1,8 +1,9 @@
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Folder } from "lucide-react";
 import { useConclaveStore } from "../store/useConclaveStore.js";
 import { hubClient } from "../lib/hubClient.js";
 import { agentColorVar } from "../lib/agents.js";
 import { Avatar } from "./Avatar.js";
+import { FilesPanel } from "./FilesPanel.js";
 import styles from "./Sidebar.module.css";
 
 function threadLabel(workspace: string | null, kind: string): string {
@@ -25,23 +26,52 @@ export function Sidebar(): JSX.Element {
   const setMessages = useConclaveStore((s) => s.setMessages);
   const artifacts = useConclaveStore((s) => Object.values(s.artifactsById));
   const setActiveArtifact = useConclaveStore((s) => s.setActiveArtifact);
+  const sidebarView = useConclaveStore((s) => s.sidebarView);
+  const setSidebarView = useConclaveStore((s) => s.setSidebarView);
+  const machines = useConclaveStore((s) => s.machines);
+  const setMachines = useConclaveStore((s) => s.setMachines);
+  const workspacesById = useConclaveStore((s) => s.workspacesById);
+  const activeWorkspaceId = useConclaveStore((s) => s.activeWorkspaceId);
 
   const openThread = async (id: string): Promise<void> => {
     setActiveThread(id);
     setMessages(id, await hubClient.listMessages(id));
   };
 
+  const showFiles = (): void => {
+    setSidebarView("files");
+    if (machines.length === 0) void hubClient.listMachines().then(setMachines);
+  };
+
+  const active = activeWorkspaceId ? workspacesById[activeWorkspaceId] : undefined;
+  const shown = active ? threads.filter((t) => t.workspace === active.name) : threads;
+
   return (
     <aside className={styles.sidebar} data-testid="sidebar">
       <div className={styles.rail}>
-        <button className={styles.railBtnActive} aria-label="chats">
+        <button
+          className={sidebarView === "chats" ? styles.railBtnActive : styles.railBtn}
+          aria-label="chats"
+          onClick={() => setSidebarView("chats")}
+        >
           <MessageCircle size={16} />
+        </button>
+        <button
+          className={sidebarView === "files" ? styles.railBtnActive : styles.railBtn}
+          aria-label="files"
+          onClick={showFiles}
+        >
+          <Folder size={16} />
         </button>
       </div>
 
+      {sidebarView === "files" ? (
+        <FilesPanel />
+      ) : (
+        <>
       <div className={styles.section}>
         <div className={styles.sectionHeader}>chats</div>
-        {threads.map((t) => {
+        {shown.map((t) => {
           const selected = t.id === activeThreadId;
           return (
             <button
@@ -90,6 +120,8 @@ export function Sidebar(): JSX.Element {
             </button>
           ))}
         </div>
+      )}
+        </>
       )}
     </aside>
   );
