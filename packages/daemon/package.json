@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "conclave-daemon": "src/cli.ts"
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "dev": "tsx src/main.ts"
