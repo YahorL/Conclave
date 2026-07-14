@@ -78,5 +78,13 @@ function migrate(db: Database.Database): void {
       created_at TEXT NOT NULL,
       blob       BLOB NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS workspaces (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL,
+      machine     TEXT NOT NULL,
+      folder_path TEXT NOT NULL,
+      created_at  TEXT NOT NULL
+    );
   `);
 }
