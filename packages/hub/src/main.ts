@@ -33,9 +33,11 @@ const tasks = new TaskStore(db);
 const artifacts = new ArtifactStore(db);
 const workspaces = new WorkspaceStore(db);
 const budgetUsd = Number(process.env["CONCLAVE_BUDGET_USD"] ?? 25);
+const webDir = process.env["CONCLAVE_WEB_DIR"];
 const app = await buildServer({
-  mailbox, token, registry, db, orchestrator, status, budgetUsd, tasks, artifacts, workspaces,
+  mailbox, token, registry, db, orchestrator, status, budgetUsd, tasks, artifacts, workspaces, webDir,
 });
 await app.listen({ port, host: "0.0.0.0" });
 console.log(`conclave hub: ${registry.agents.length} agent(s) registered`);
+if (webDir) console.log(`conclave hub: serving web app from ${webDir}`);
 console.log(`conclave hub listening on :${port}`);
