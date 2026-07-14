@@ -100,3 +100,9 @@ orchestrator eventually stamps it `no-response (timeout)` rather than resuming.
    create_artifact MCP tool; confirm the artifact is stored (GET /api/artifacts),
    a `file` message is posted into the thread with the artifact id, and the web
    ARTIFACTS sidebar lists it and opens it read-only with a working download.
+8. File access (step 5): run `conclave-daemon grant <dir>` on the machine (writes
+   CONCLAVE_GRANTS_FILE, default ./conclave-grants.json). Confirm GET /api/machines
+   shows the granted root, POST /api/fs/<machine>/list returns entries within it,
+   POST /api/fs/<machine>/read returns file content, a path outside any granted
+   root returns 422 (path-jail, enforced daemon-side), and an unknown machine
+   returns 503. Verified locally end-to-end with a real hub + daemon.

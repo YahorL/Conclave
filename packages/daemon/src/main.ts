@@ -56,7 +56,7 @@ async function main(): Promise<void> {
       loop.handleTask(task);
     },
     onFsRequest: (req) => {
-      void (async () => socket.send(await fileService.handle(req)))();
+      void (async () => socket.send({ type: "fs-response", ...(await fileService.handle(req)) }))();
     },
   });
   socket.start();

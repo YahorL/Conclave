@@ -36,7 +36,7 @@ describe("HubSocket fs-request round-trip", () => {
       hubUrl: `http://127.0.0.1:${port}`, token: "t",
       onMessage: () => undefined,
       onFsRequest: (req) => {
-        void (async () => socket.send(await svc.handle(req)))();
+        void (async () => socket.send({ type: "fs-response", ...(await svc.handle(req)) }))();
       },
     });
     socket.start();
