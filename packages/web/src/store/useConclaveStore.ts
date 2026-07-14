@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { AgentConfig, AgentStatus, Artifact, Message, Task, Thread, UsageSummary } from "@conclave/shared";
+import type { AgentConfig, AgentStatus, Artifact, FsEntry, Message, Task, Thread, UsageSummary, Workspace } from "@conclave/shared";
+import type { MachineInfo } from "../lib/hubClient.js";
 import type { WsFrame } from "../lib/socket.js";
 
 interface State {
@@ -13,6 +14,13 @@ interface State {
   activeThreadId: string | null;
   activeArtifactId: string | null;
   openThreadIds: string[];
+  sidebarView: "chats" | "files";
+  machines: MachineInfo[];
+  selectedMachine: string | null;
+  fsChildren: Record<string, FsEntry[]>;
+  activeFsFile: { machine: string; path: string } | null;
+  workspacesById: Record<string, Workspace>;
+  activeWorkspaceId: string | null;
   setThreads(t: Thread[]): void;
   setMessages(threadId: string, m: Message[]): void;
   setAgents(a: AgentConfig[]): void;
@@ -21,6 +29,12 @@ interface State {
   setActiveThread(id: string): void;
   setActiveArtifact(id: string | null): void;
   openThread(id: string): void;
+  setSidebarView(v: "chats" | "files"): void;
+  setMachines(m: MachineInfo[]): void;
+  setSelectedMachine(id: string | null): void;
+  setFsChildren(key: string, entries: FsEntry[]): void;
+  setActiveFsFile(f: { machine: string; path: string } | null): void;
+  setActiveWorkspace(id: string | null): void;
   applyFrame(f: WsFrame): void;
   reset(): void;
 }
@@ -41,6 +55,13 @@ const initial = {
   activeThreadId: null as string | null,
   activeArtifactId: null as string | null,
   openThreadIds: [] as string[],
+  sidebarView: "chats" as "chats" | "files",
+  machines: [] as MachineInfo[],
+  selectedMachine: null as string | null,
+  fsChildren: {} as Record<string, FsEntry[]>,
+  activeFsFile: null as { machine: string; path: string } | null,
+  workspacesById: {} as Record<string, Workspace>,
+  activeWorkspaceId: null as string | null,
 };
 
 export const useConclaveStore = create<State>((set) => ({
@@ -56,13 +77,21 @@ export const useConclaveStore = create<State>((set) => ({
     set((s) => ({
       activeThreadId: id,
       activeArtifactId: null,
+      activeFsFile: null,
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
     })),
-  setActiveArtifact: (id) => set({ activeArtifactId: id }),
+  setActiveArtifact: (id) => set({ activeArtifactId: id, activeFsFile: null }),
   openThread: (id) =>
     set((s) => ({
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
     })),
+  setSidebarView: (v) => set({ sidebarView: v }),
+  setMachines: (m) => set({ machines: m }),
+  setSelectedMachine: (id) => set({ selectedMachine: id }),
+  setFsChildren: (key, entries) =>
+    set((s) => ({ fsChildren: { ...s.fsChildren, [key]: entries } })),
+  setActiveFsFile: (f) => set({ activeFsFile: f, activeArtifactId: null }),
+  setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
   applyFrame: (f) =>
     set((s) => {
       switch (f.type) {
@@ -85,6 +114,8 @@ export const useConclaveStore = create<State>((set) => ({
           return { tasksById: { ...s.tasksById, [f.task.id]: f.task } };
         case "artifact":
           return { artifactsById: { ...s.artifactsById, [f.artifact.id]: f.artifact } };
+        case "workspace":
+          return { workspacesById: { ...s.workspacesById, [f.workspace.id]: f.workspace } };
         case "turn":
           return {};
         default:

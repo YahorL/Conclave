@@ -1,7 +1,9 @@
 import type {
-  AgentConfig, AgentStatus, Artifact, Message, NewMessage, NewTask, Registry, Task, Thread, UsageSummary,
+  AgentConfig, AgentStatus, Artifact, FsEntry, Message, NewMessage, NewTask, NewWorkspace, Registry, Task, Thread, UsageSummary, Workspace,
 } from "@conclave/shared";
 import { config } from "./config.js";
+
+export type MachineInfo = { machine: string; files: string[]; lastSeen: string };
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -33,4 +35,11 @@ export const hubClient = {
   getArtifact: (id: string) => req<Artifact>("GET", `/api/artifacts/${id}`),
   artifactBlobUrl: (id: string) =>
     `/api/artifacts/${id}/blob${config.token ? `?token=${encodeURIComponent(config.token)}` : ""}`,
+  listMachines: () => req<MachineInfo[]>("GET", "/api/machines"),
+  fsList: (machine: string, path: string) =>
+    req<FsEntry[]>("POST", `/api/fs/${machine}/list`, { path }),
+  fsRead: (machine: string, path: string) =>
+    req<{ content: string }>("POST", `/api/fs/${machine}/read`, { path }),
+  createWorkspace: (input: NewWorkspace) => req<Workspace>("POST", "/api/workspaces", input),
+  listWorkspaces: () => req<Workspace[]>("GET", "/api/workspaces"),
 };
