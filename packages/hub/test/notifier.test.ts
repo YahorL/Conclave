@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { AgentStatus, Approval, Task, Thread } from "@conclave/shared";
 import { openDb } from "../src/db.js";
 import { PushStore } from "../src/push-store.js";
@@ -66,6 +66,17 @@ describe("payload mappers", () => {
     expect(statusPayload(blocked({ resetsAt: undefined }))!.body).toBe("usage limit reached");
     expect(statusPayload(blocked({ status: "running" }))).toBeNull();
   });
+
+  it("status: blocked awaiting approval does not fire (approval trigger owns that)", () => {
+    expect(
+      statusPayload(blocked({ activity: "awaiting approval", resetsAt: undefined })),
+    ).toBeNull();
+  });
+
+  it("approval: body is truncated to 120 chars", () => {
+    const p = approvalPayload(approval({ action: "x".repeat(500) }))!;
+    expect(p.body).toBe("x".repeat(120));
+  });
 });
 
 describe("Notifier", () => {
@@ -113,6 +124,17 @@ describe("Notifier", () => {
     mailboxEvents.emit("task", task({ state: "running" }));
     mailboxEvents.emit("thread", thread({ state: "open" }));
     statusEvents.emit("agent-status", blocked({ status: "idle" }));
+    await notifier.idle();
+    expect(sent).toEqual([]);
+    notifier.stop();
+  });
+
+  it("sends nothing for a blocked status that is an approval wait, not a usage limit", async () => {
+    notifier = makeNotifier();
+    statusEvents.emit(
+      "agent-status",
+      blocked({ activity: "awaiting approval", resetsAt: undefined }),
+    );
     await notifier.idle();
     expect(sent).toEqual([]);
     notifier.stop();

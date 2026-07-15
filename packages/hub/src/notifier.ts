@@ -20,7 +20,7 @@ export function approvalPayload(a: Approval): NotifyPayload | null {
   if (a.state !== "pending") return null;
   return {
     title: "Approval needed",
-    body: a.action,
+    body: a.action.slice(0, 120),
     url: `/?thread=${a.threadId}`,
     tag: `approval-${a.id}`,
   };
@@ -49,6 +49,10 @@ export function threadPayload(t: Thread): NotifyPayload | null {
 
 export function statusPayload(s: AgentStatus): NotifyPayload | null {
   if (s.status !== "blocked") return null;
+  // Only the usage-limit case ("rate-limited" from the daemon) triggers a push.
+  // The daemon also reports blocked with activity "awaiting approval" for
+  // input-required tasks — that is covered by the approval trigger already.
+  if (s.activity !== "rate-limited" && s.resetsAt == null) return null;
   return {
     title: `${s.agent} blocked`,
     body: s.resetsAt ? `resets ${hhmm(s.resetsAt)}` : "usage limit reached",
