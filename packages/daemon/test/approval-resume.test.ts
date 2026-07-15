@@ -42,7 +42,7 @@ function makeLoop(adapter: RuntimeAdapter, hub: HubClient): { loop: AgentLoop; s
   const state = new DaemonState(join(mkdtempSync(join(tmpdir(), "conclave-ares-")), "s.json"));
   const loop = new AgentLoop({
     agents: [AGENT], hub, adapters: { codex: adapter }, state,
-    queue: new TurnQueue(), hubUrl: "http://h", token: "t", allowAgentTriggers: false,
+    queue: new TurnQueue(), hubUrl: "http://h", token: "t",
     bridgeCommand: { command: "node", args: ["/fake/bridge.js"] },
   });
   return { loop, state };

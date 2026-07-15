@@ -33,14 +33,13 @@ function msg(partial: Partial<Message>): Message {
 }
 
 describe("shouldTrigger", () => {
-  it("applies all four rules", () => {
-    expect(shouldTrigger(AGENT, msg({}), false)).toBe(true);
-    expect(shouldTrigger(AGENT, msg({ to: ["someone-else"] }), false)).toBe(false);
-    expect(shouldTrigger(AGENT, msg({ from: "claude-code", to: ["claude-code"] }), false)).toBe(false);
-    expect(shouldTrigger(AGENT, msg({ type: "status" }), false)).toBe(false);
-    expect(shouldTrigger(AGENT, msg({ from: "codex" }), false)).toBe(false);
-    expect(shouldTrigger(AGENT, msg({ from: "codex" }), true)).toBe(true);
-    expect(shouldTrigger(AGENT, msg({ type: "proposal" }), false)).toBe(true);
+  it("fires only for text/proposal addressed to the agent, not its own", () => {
+    expect(shouldTrigger(AGENT, msg({}))).toBe(true);                                   // you → claude-code
+    expect(shouldTrigger(AGENT, msg({ to: ["someone-else"] }))).toBe(false);            // not addressed
+    expect(shouldTrigger(AGENT, msg({ from: "claude-code", to: ["claude-code"] }))).toBe(false); // own message
+    expect(shouldTrigger(AGENT, msg({ type: "status" }))).toBe(false);                  // wrong type
+    expect(shouldTrigger(AGENT, msg({ from: "codex" }))).toBe(true);                    // agent → agent now triggers
+    expect(shouldTrigger(AGENT, msg({ type: "proposal" }))).toBe(true);
   });
 });
 
@@ -69,7 +68,7 @@ class FakeAdapter implements RuntimeAdapter {
     }
     return {
       sessionId: opts.sessionId ?? "fake-sess-1",
-      text: `reply to: ${opts.prompt.split("\n").at(-1)}`,
+      text: "my rebuttal",
       isError: false,
       costUsd: 0.01,
     };
@@ -98,7 +97,6 @@ describe("AgentLoop end-to-end (live hub, fake adapter)", () => {
       queue: new TurnQueue(),
       hubUrl,
       token: TOKEN,
-      allowAgentTriggers: false,
       bridgeCommand: { command: "node", args: ["/fake/bridge.js"] },
     });
     return { mailbox, adapter, loop };
@@ -157,5 +155,45 @@ describe("AgentLoop end-to-end (live hub, fake adapter)", () => {
     const status = mailbox.listMessages(t.id).find((m) => m.type === "status");
     expect(status).toBeDefined();
     expect(status!.body).toContain("simulated CLI crash");
+  });
+});
+
+describe("runTurn loop-guard", () => {
+  let app: FastifyInstance;
+  afterEach(async () => {
+    await app.close();
+  });
+
+  async function run(from: string): Promise<string[]> {
+    const dir = mkdtempSync(join(tmpdir(), "conclave-loopguard-"));
+    const mailbox = new Mailbox(openDb(join(dir, "t.db")));
+    app = await buildServer({ mailbox, token: TOKEN });
+    await app.listen({ port: 0, host: "127.0.0.1" });
+    const port = (app.server.address() as AddressInfo).port;
+    const hubUrl = `http://127.0.0.1:${port}`;
+    const adapter = new FakeAdapter();
+    const t = mailbox.createThread({ kind: "chat", participants: ["claude-code", from] });
+    const trigger = mailbox.appendMessage(t.id, {
+      from, to: ["claude-code"], type: "text", body: "ping", artifacts: [],
+    });
+    const loop = new AgentLoop({
+      agents: [AGENT], hub: new HubClient(hubUrl, TOKEN),
+      adapters: { "claude-code": adapter, codex: adapter },
+      state: new DaemonState(join(dir, "s.json")),
+      queue: new TurnQueue(), hubUrl, token: TOKEN,
+      bridgeCommand: { command: "node", args: ["/fake/bridge.js"] },
+    });
+    loop.handleMessage(trigger);
+    await loop.idle();
+    const reply = mailbox.listMessages(t.id).find((m) => m.body === "my rebuttal");
+    return reply!.to;
+  }
+
+  it("replies to a human trigger addressed back to the human", async () => {
+    expect(await run("you")).toEqual(["you"]);
+  });
+
+  it("replies to an agent trigger with to:[] so it does not auto-retrigger", async () => {
+    expect(await run("codex")).toEqual([]);
   });
 });

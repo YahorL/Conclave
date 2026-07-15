@@ -39,7 +39,7 @@ function loopWith(adapter: RuntimeAdapter, hub: HubClient): AgentLoop {
   const dir = mkdtempSync(join(tmpdir(), "conclave-taskrun-"));
   return new AgentLoop({
     agents: [AGENT], hub, adapters: { codex: adapter }, state: new DaemonState(join(dir, "s.json")),
-    queue: new TurnQueue(), hubUrl: "http://h", token: "t", allowAgentTriggers: false,
+    queue: new TurnQueue(), hubUrl: "http://h", token: "t",
     bridgeCommand: { command: "node", args: ["/fake/bridge.js"] },
   });
 }

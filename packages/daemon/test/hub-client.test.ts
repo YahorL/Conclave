@@ -25,19 +25,12 @@ describe("loadDaemonConfig", () => {
     expect(cfg.claudeBin).toBe("claude");
     expect(cfg.codexBin).toBe("codex");
     expect(cfg.stateFile).toBe("./daemon-state.json");
-    expect(cfg.allowAgentTriggers).toBe(false);
   });
 
   it("throws naming the missing variable", () => {
     expect(() => loadDaemonConfig({ ...base, CONCLAVE_TOKEN: undefined })).toThrow(
       /CONCLAVE_TOKEN/,
     );
-  });
-
-  it("parses CONCLAVE_ALLOW_AGENT_TRIGGERS=1", () => {
-    expect(
-      loadDaemonConfig({ ...base, CONCLAVE_ALLOW_AGENT_TRIGGERS: "1" }).allowAgentTriggers,
-    ).toBe(true);
   });
 });
 

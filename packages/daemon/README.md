@@ -13,8 +13,7 @@ CONCLAVE_MACHINE=dev-box npx pnpm --filter @conclave/daemon dev
 
 Env: CONCLAVE_HUB_URL, CONCLAVE_TOKEN, CONCLAVE_MACHINE (required) ·
 CONCLAVE_CLAUDE_BIN (default `claude`) · CONCLAVE_STATE_FILE (default
-`./daemon-state.json`) · CONCLAVE_ALLOW_AGENT_TRIGGERS (default 0 — agents
-only respond to "you")
+`./daemon-state.json`)
 
 ## Registry
 
