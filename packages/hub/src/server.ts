@@ -22,6 +22,7 @@ import {
   NewTaskSchema,
   NewThreadSchema,
   NewWorkspaceSchema,
+  PushSubscriptionSchema,
   TaskStateSchema,
   UsageReportSchema,
 } from "@conclave/shared";
@@ -40,6 +41,7 @@ import { AlreadyDecidedError, ApprovalStore, decideApproval, fileApproval } from
 import { WorkspaceStore } from "./workspaces.js";
 import { assertAclAllowed } from "./acl.js";
 import { MachineRegistry, PendingRequests } from "./fs-tunnel.js";
+import type { PushStore } from "./push-store.js";
 
 export interface ServerOptions {
   mailbox: Mailbox;
@@ -53,6 +55,8 @@ export interface ServerOptions {
   artifacts?: ArtifactStore;
   workspaces?: WorkspaceStore;
   approvals?: ApprovalStore;
+  push?: PushStore;
+  vapidPublicKey?: string;
   webDir?: string;
 }
 
@@ -293,6 +297,30 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       if (e instanceof AlreadyDecidedError) return reply.code(409).send({ error: e.message });
       throw e;
     }
+  });
+
+  app.get("/api/push/vapid-public-key", async (_req, reply) => {
+    if (!opts.push || !opts.vapidPublicKey) {
+      return reply.code(503).send({ error: "push not configured" });
+    }
+    return { key: opts.vapidPublicKey };
+  });
+
+  app.post("/api/push/subscribe", async (req, reply) => {
+    if (!opts.push) return reply.code(503).send({ error: "push not configured" });
+    const body = parseOr400(PushSubscriptionSchema, req.body, reply);
+    if (!body) return;
+    opts.push.upsert(body);
+    return reply.code(201).send({ ok: true });
+  });
+
+  const UnsubscribeBodySchema = z.object({ endpoint: z.string().min(1) });
+  app.post("/api/push/unsubscribe", async (req, reply) => {
+    if (!opts.push) return reply.code(503).send({ error: "push not configured" });
+    const body = parseOr400(UnsubscribeBodySchema, req.body, reply);
+    if (!body) return;
+    opts.push.remove(body.endpoint);
+    return { ok: true };
   });
 
   app.post("/api/artifacts", async (req, reply) => {

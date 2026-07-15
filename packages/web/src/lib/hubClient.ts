@@ -45,4 +45,8 @@ export const hubClient = {
   listApprovals: () => req<Approval[]>("GET", "/api/approvals"),
   decideApproval: (id: string, decision: "approved" | "denied", note?: string) =>
     req<Approval>("POST", `/api/approvals/${id}/decide`, { decision, ...(note ? { note } : {}) }),
+  getVapidPublicKey: () => req<{ key: string }>("GET", "/api/push/vapid-public-key"),
+  pushSubscribe: (sub: unknown) => req<{ ok: boolean }>("POST", "/api/push/subscribe", sub),
+  pushUnsubscribe: (endpoint: string) =>
+    req<{ ok: boolean }>("POST", "/api/push/unsubscribe", { endpoint }),
 };

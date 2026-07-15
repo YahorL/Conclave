@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
+import { Bell, BellOff } from "lucide-react";
 import { useConclaveStore } from "../store/useConclaveStore.js";
 import { agentColorVar } from "../lib/agents.js";
+import { disablePush, enablePush, isPushEnabled, pushPermission, pushSupported } from "../lib/push.js";
 import styles from "./StatusStrip.module.css";
 
 function hhmm(iso: string): string {
@@ -12,6 +15,25 @@ export function StatusStrip(): JSX.Element {
   const statusByAgent = useConclaveStore((s) => s.statusByAgent);
   const usage = useConclaveStore((s) => s.usage);
   const budget = usage?.budgetUsd ?? 0;
+
+  const [pushOn, setPushOn] = useState(false);
+  useEffect(() => {
+    if (pushSupported()) void isPushEnabled().then(setPushOn);
+  }, []);
+  const denied = pushPermission() === "denied";
+  const togglePush = async (): Promise<void> => {
+    try {
+      if (pushOn) {
+        await disablePush();
+        setPushOn(false);
+      } else {
+        await enablePush();
+        setPushOn(true);
+      }
+    } catch {
+      setPushOn(await isPushEnabled()); // re-sync on failure (e.g. permission refused)
+    }
+  };
 
   return (
     <aside className={styles.strip} data-testid="status-strip">
@@ -54,6 +76,25 @@ export function StatusStrip(): JSX.Element {
           </div>
         );
       })}
+
+      {pushSupported() && (
+        <button
+          className={styles.pushToggle}
+          data-testid="push-toggle"
+          disabled={denied}
+          title={
+            denied
+              ? "notifications blocked in browser settings"
+              : pushOn
+                ? "disable notifications"
+                : "enable notifications"
+          }
+          onClick={() => void togglePush()}
+        >
+          {pushOn ? <Bell size={13} /> : <BellOff size={13} />}
+          <span>{pushOn ? "notifications on" : "notifications off"}</span>
+        </button>
+      )}
 
       <div className={styles.footer}>
         <span>workspace today</span>
