@@ -58,7 +58,14 @@ export function TerminalsSection(): JSX.Element {
         <div className={styles.spawnPicker}>
           <label>
             machine
-            <select aria-label="machine" value={selected?.machine ?? ""} onChange={(e) => setMachine(e.target.value)}>
+            <select
+              aria-label="machine"
+              value={selected?.machine ?? ""}
+              onChange={(e) => {
+                setMachine(e.target.value);
+                setCwd("");
+              }}
+            >
               {grantedMachines.map((m) => (
                 <option key={m.machine} value={m.machine}>
                   {m.machine}

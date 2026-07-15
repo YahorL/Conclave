@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   listMachines: vi.fn(async () => [
     { machine: "m1", files: ["/w"], terminals: true, lastSeen: "" },
     { machine: "m2", files: ["/x"], terminals: false, lastSeen: "" },
+    { machine: "m3", files: ["/x"], terminals: true, lastSeen: "" },
   ]),
   spawnTerminal: vi.fn(async () => ({ ok: true })),
 }));
@@ -39,5 +40,15 @@ describe("TerminalsSection", () => {
     expect(machineSelect).not.toHaveTextContent("m2");
     await userEvent.click(screen.getByTestId("spawn-submit"));
     expect(mocks.spawnTerminal).toHaveBeenCalledWith("m1", "shell", "/w");
+  });
+
+  it("resets the folder to the new machine's first granted root when the machine changes", async () => {
+    render(<TerminalsSection />);
+    await userEvent.click(screen.getByTestId("spawn-terminal"));
+    const machineSelect = await screen.findByLabelText("machine");
+    await userEvent.selectOptions(screen.getByLabelText("folder"), "/w");
+    await userEvent.selectOptions(machineSelect, "m3");
+    await userEvent.click(screen.getByTestId("spawn-submit"));
+    expect(mocks.spawnTerminal).toHaveBeenCalledWith("m3", "shell", "/x");
   });
 });
