@@ -1,0 +1,65 @@
+.card {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--text-primary);
+  background: var(--chip);
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.title {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: lowercase;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+.chip[data-state="pending"] {
+  font-weight: 700;
+}
+.action {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-body);
+}
+.note {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.controls {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.noteInput {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-body);
+  font-size: 11px;
+  padding: 3px 6px;
+}
+.approve,
+.deny {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: 11px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.approve {
+  font-weight: 700;
+}

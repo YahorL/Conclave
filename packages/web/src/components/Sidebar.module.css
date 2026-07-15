@@ -117,3 +117,13 @@
     opacity: 0.5;
   }
 }
+
+.approvalBadge {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  padding: 0 5px;
+}
