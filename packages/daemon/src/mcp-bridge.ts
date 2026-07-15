@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -124,6 +125,46 @@ export function buildBridgeServer(
           body: `created artifact: ${name}`, artifacts: [artifact.id],
         });
         return ok(artifact);
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "request_approval",
+    {
+      description:
+        "Request user approval before a dangerous action. If the result is pending, " +
+        "end your turn — you will be resumed with the decision.",
+      inputSchema: {
+        action: z.string().min(1)
+          .describe("What you want to do, e.g. 'run scripts/deploy.sh prod'"),
+        idempotency_key: z.string().min(1).optional()
+          .describe("Stable key so a retried request cannot double-file; defaults to a hash of the action"),
+      },
+    },
+    async ({ action, idempotency_key }) => {
+      try {
+        const key =
+          idempotency_key ?? createHash("sha256").update(`${threadId}:${action}`).digest("hex");
+        const approval = await client.createApproval({
+          threadId, requestedBy: agentId, action, idempotencyKey: key,
+        });
+        if (approval.state !== "pending") {
+          return ok({
+            state: approval.state,
+            approvalId: approval.id,
+            ...(approval.note ? { note: approval.note } : {}),
+            message: `already decided: ${approval.state}${approval.note ? ` — ${approval.note}` : ""}`,
+          });
+        }
+        return ok({
+          state: "pending",
+          approvalId: approval.id,
+          message:
+            "Approval pending. Please end your turn now — you will be resumed with the decision.",
+        });
       } catch (e) {
         return err(e);
       }
