@@ -1,5 +1,8 @@
+import { randomUUID } from "node:crypto";
 import type Database from "better-sqlite3";
-import type { Approval, ApprovalState } from "@conclave/shared";
+import type { Approval, ApprovalState, NewApproval } from "@conclave/shared";
+import type { Mailbox } from "./mailbox.js";
+import type { TaskStore } from "./tasks.js";
 
 export class AlreadyDecidedError extends Error {
   constructor(id: string, state: ApprovalState) {
@@ -85,4 +88,68 @@ export class ApprovalStore {
       .run(decision, note ?? null, decidedAt, id);
     return { ...current, state: decision, ...(note ? { note } : {}), decidedAt };
   }
+}
+
+export interface ApprovalDeps {
+  mailbox: Mailbox;
+  store: ApprovalStore;
+  tasks?: TaskStore;
+}
+
+export function fileApproval(deps: ApprovalDeps, input: NewApproval): Approval {
+  const existing = deps.store.findByKey(input.requestedBy, input.idempotencyKey);
+  if (existing) return existing;
+
+  const task = input.taskId
+    ? deps.tasks?.get(input.taskId)
+    : deps.tasks?.getByThread(input.threadId);
+  const approval: Approval = {
+    id: randomUUID(),
+    threadId: input.threadId,
+    ...(task ? { taskId: task.id } : {}),
+    requestedBy: input.requestedBy,
+    action: input.action,
+    idempotencyKey: input.idempotencyKey,
+    state: "pending",
+    createdAt: new Date().toISOString(),
+  };
+  deps.store.create(approval);
+  deps.mailbox.appendMessage(input.threadId, {
+    from: input.requestedBy,
+    to: [],
+    type: "approval-request",
+    body: JSON.stringify({ approvalId: approval.id, action: approval.action }),
+    artifacts: [],
+  });
+  if (task && deps.tasks && task.state === "running") {
+    const updated = deps.tasks.updateState(task.id, "input-required");
+    deps.mailbox.events.emit("task", updated);
+  }
+  deps.mailbox.events.emit("approval", approval);
+  return approval;
+}
+
+export function decideApproval(
+  deps: ApprovalDeps,
+  id: string,
+  decision: "approved" | "denied",
+  note?: string,
+): Approval {
+  const approval = deps.store.decide(id, decision, note);
+  deps.mailbox.appendMessage(approval.threadId, {
+    from: "you",
+    to: [],
+    type: "status",
+    body: `you ${decision}: ${approval.action}${note ? ` — ${note}` : ""}`,
+    artifacts: [],
+  });
+  if (approval.taskId && deps.tasks) {
+    const t = deps.tasks.get(approval.taskId);
+    if (t && t.state === "input-required") {
+      const updated = deps.tasks.updateState(approval.taskId, "running");
+      deps.mailbox.events.emit("task", updated);
+    }
+  }
+  deps.mailbox.events.emit("approval", approval);
+  return approval;
 }

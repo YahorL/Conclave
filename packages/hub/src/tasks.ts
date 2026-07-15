@@ -11,7 +11,7 @@ export class InvalidTransitionError extends Error {
 
 const ALLOWED: Record<TaskState, TaskState[]> = {
   queued: ["running", "failed"],
-  running: ["done", "failed"],
+  running: ["input-required", "done", "failed"],
   "input-required": ["running", "failed"],
   done: [],
   failed: [],
@@ -59,6 +59,13 @@ export class TaskStore {
 
   get(id: string): Task | undefined {
     const row = this.db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as TaskRow | undefined;
+    return row ? rowToTask(row) : undefined;
+  }
+
+  getByThread(threadId: string): Task | undefined {
+    const row = this.db
+      .prepare("SELECT * FROM tasks WHERE thread_id = ? ORDER BY created_at DESC LIMIT 1")
+      .get(threadId) as TaskRow | undefined;
     return row ? rowToTask(row) : undefined;
   }
 
