@@ -121,3 +121,33 @@ subscription — everyone must re-enable via the bell.
    `curl -s -X POST -H "Authorization: Bearer $CONCLAVE_TOKEN" -H "content-type: application/json" -d '{"threadId":"<an open thread id>","requestedBy":"<an agent id>","action":"smoke test — ignore","idempotencyKey":"smoke-1"}' http://localhost:7777/api/approvals`
 3. A "Approval needed" notification appears on the device → click it → the app opens focused on that thread.
 4. Deny the approval in the UI (cleanup). Bell → "notifications off" unsubscribes.
+
+## Terminals
+
+Terminals are real PTYs spawned by the **daemon** (node-pty), streamed through the
+hub, and rendered in the web app. Default deny — enable per machine, on the machine:
+
+```bash
+npx tsx packages/daemon/src/cli.ts grant-terminals
+# and make sure at least one folder is granted; spawn cwds are jailed to granted roots
+npx tsx packages/daemon/src/cli.ts grant /home/me/proj
+```
+
+Requirements on the daemon machine: build tools for node-pty (python3, make, g++ —
+same set better-sqlite3 needs). If node-pty fails to build, the daemon still runs;
+terminals just show as unavailable.
+
+> **Security note:** anyone who can reach the web app (and thus the token) gets an
+> interactive shell on every machine that granted `terminals`, jailed only by which
+> folders you granted. Grant it only on machines you're comfortable exposing to
+> everyone on the hub's network. Keep the hub localhost/tailnet-only.
+
+Manual smoke checklist (record the result; automated tests cover spawn/route/replay,
+not real TUI fidelity):
+
+1. `grant-terminals` on a daemon machine, restart the daemon.
+2. Web sidebar → TERMINALS → `+` → pick machine/shell/folder → spawn.
+3. Type `ls`, see output; resize the window; check reflow.
+4. Close the tab, reopen the terminal row — scrollback replays.
+5. Spawn a `claude` terminal — the TUI renders and takes keystrokes.
+6. Kill from the header — row disappears.
