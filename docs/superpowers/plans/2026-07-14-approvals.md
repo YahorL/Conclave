@@ -1850,3 +1850,15 @@ git commit -m "feat(web): approval card with approve/deny, toolbar indicator, si
 ## Known limitation (documented, deliberate)
 
 If the daemon is offline when a decision lands, the `approval` WS frame is missed and the task stays `running` without a live turn — there is deliberately **no approval catch-up on reconnect**, because re-resuming after a restart could double-execute an approved action (the in-memory `handledApprovals` dedupe does not survive restarts). Surface this in the docs if it bites; the safe fix later is persisting handled-approval ids in `DaemonState`.
+
+**Decide-while-turn-live race (found in final review, top follow-up):** `finishTaskTurn`
+distinguishes pause-vs-complete solely via the hub task state, and `running` is
+ambiguous — it is both the normal in-progress state and the state the hub flips
+back to on decide. If a decision lands between the agent's turn ending and
+`finishTaskTurn`'s `getTask` round-trip, the task is marked `done` and the queued
+resume sees `done` and skips — the approval resolved but the agent never acts on
+it. Recoverable (no double-execution; the user sees the task close without the
+action and can re-issue) and unlikely with human-speed deciders, but **any
+auto/instant decider must wait for the fix**: give resume priority over
+auto-completion (daemon remembers the task went `input-required` this turn), or
+add a distinct "decided, awaiting resume" hub state so `running` is unambiguous.
