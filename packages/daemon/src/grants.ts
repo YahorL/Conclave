@@ -21,6 +21,16 @@ export class GrantStore {
     }
   }
 
+  terminalsGranted(): boolean {
+    if (!existsSync(this.grantsFile)) return false;
+    try {
+      const parsed = JSON.parse(readFileSync(this.grantsFile, "utf8")) as { terminals?: unknown };
+      return parsed.terminals === true;
+    } catch {
+      return false;
+    }
+  }
+
   isAllowed(p: string): boolean {
     const abs = resolve(p);
     return this.roots().some((root) => abs === root || abs.startsWith(root + sep));

@@ -2,37 +2,55 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
-function load(file: string): string[] {
-  if (!existsSync(file)) return [];
+interface Grants {
+  files: string[];
+  terminals: boolean;
+}
+
+function load(file: string): Grants {
+  if (!existsSync(file)) return { files: [], terminals: false };
   try {
-    const p = JSON.parse(readFileSync(file, "utf8")) as { files?: unknown };
-    return Array.isArray(p.files) ? (p.files as string[]) : [];
+    const p = JSON.parse(readFileSync(file, "utf8")) as { files?: unknown; terminals?: unknown };
+    return {
+      files: Array.isArray(p.files) ? (p.files as string[]) : [],
+      terminals: p.terminals === true,
+    };
   } catch {
-    return [];
+    return { files: [], terminals: false };
   }
 }
 
-function save(file: string, files: string[]): void {
-  writeFileSync(file, JSON.stringify({ files }, null, 2));
+function save(file: string, grants: Grants): void {
+  writeFileSync(file, JSON.stringify(grants, null, 2));
 }
 
 export function runCli(argv: string[], grantsFile: string): void {
   const [cmd, arg] = argv;
-  const roots = load(grantsFile);
+  const grants = load(grantsFile);
   if (cmd === "grant") {
     if (!arg) throw new Error("usage: conclave-daemon grant <path>");
     const abs = resolve(arg);
-    if (!roots.includes(abs)) roots.push(abs);
-    save(grantsFile, roots);
+    if (!grants.files.includes(abs)) grants.files.push(abs);
+    save(grantsFile, grants);
     console.log(`granted files: ${abs}`);
   } else if (cmd === "revoke") {
     if (!arg) throw new Error("usage: conclave-daemon revoke <path>");
-    save(grantsFile, roots.filter((r) => r !== resolve(arg)));
+    grants.files = grants.files.filter((r) => r !== resolve(arg));
+    save(grantsFile, grants);
     console.log(`revoked files: ${resolve(arg)}`);
+  } else if (cmd === "grant-terminals") {
+    grants.terminals = true;
+    save(grantsFile, grants);
+    console.log("granted terminals");
+  } else if (cmd === "revoke-terminals") {
+    grants.terminals = false;
+    save(grantsFile, grants);
+    console.log("revoked terminals");
   } else if (cmd === "grants") {
-    for (const r of roots) console.log(r);
+    for (const r of grants.files) console.log(r);
+    console.log(`terminals: ${grants.terminals ? "on" : "off"}`);
   } else {
-    console.error("usage: conclave-daemon <grant|revoke|grants> [path]");
+    console.error("usage: conclave-daemon <grant|revoke|grant-terminals|revoke-terminals|grants> [path]");
     process.exitCode = 1;
   }
 }

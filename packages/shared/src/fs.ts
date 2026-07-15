@@ -17,6 +17,7 @@ export const FsResponseSchema = z.object({
 export const HelloSchema = z.object({
   machine: z.string().min(1),
   files: z.array(z.string()),
+  terminals: z.boolean().default(false),
 });
 export const FsEntrySchema = z.object({
   name: z.string(),
