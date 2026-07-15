@@ -18,7 +18,7 @@ import { AgentLoop } from "../src/agent-loop.js";
 const TOKEN = "rep-token";
 const AGENT: AgentConfig = {
   id: "codex", name: "Codex", runtime: "codex", machine: "m",
-  workspace: "/tmp/ws", role: "", allowedTools: [],
+  workspace: "/tmp/ws", role: "", allowedTools: [], dangerousActions: [],
 };
 
 class ScriptedAdapter implements RuntimeAdapter {

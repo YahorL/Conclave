@@ -10,6 +10,7 @@ export const AgentConfigSchema = z.object({
   workspace: z.string().min(1),
   role: z.string().default(""),
   allowedTools: z.array(z.string()).default([]),
+  dangerousActions: z.array(z.string()).default([]),
 });
 
 export const RegistrySchema = z.object({

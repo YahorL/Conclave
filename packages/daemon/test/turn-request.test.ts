@@ -19,7 +19,7 @@ const TOKEN = "tr-token";
 
 const AGENT: AgentConfig = {
   id: "codex", name: "Codex", runtime: "codex", machine: "dev-box",
-  workspace: "/tmp/codex-ws", role: "You are the skeptic.", allowedTools: [],
+  workspace: "/tmp/codex-ws", role: "You are the skeptic.", allowedTools: [], dangerousActions: [],
 };
 
 class FakeAdapter implements RuntimeAdapter {

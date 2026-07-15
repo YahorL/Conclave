@@ -3,6 +3,7 @@ import { useConclaveStore } from "../store/useConclaveStore.js";
 import { agentColorVar } from "../lib/agents.js";
 import { parseMessageBody, type Block, type InlineSeg } from "../lib/parseMessage.js";
 import { Avatar } from "./Avatar.js";
+import { ApprovalCard } from "./ApprovalCard.js";
 import styles from "./ChatMessage.module.css";
 
 const BADGE: Partial<Record<Message["type"], string>> = { proposal: "plan", verdict: "verdict" };
@@ -54,6 +55,10 @@ export function ChatMessage({ message }: { message: Message }): JSX.Element {
   const agentIds = useConclaveStore((s) => s.agents.map((a) => a.id));
   const isHuman = message.from === "you";
   const badge = BADGE[message.type];
+
+  if (message.type === "approval-request") {
+    return <ApprovalCard message={message} />;
+  }
 
   if (message.type === "status") {
     return (

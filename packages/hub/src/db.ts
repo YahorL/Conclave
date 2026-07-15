@@ -86,5 +86,19 @@ function migrate(db: Database.Database): void {
       folder_path TEXT NOT NULL,
       created_at  TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS approvals (
+      id              TEXT PRIMARY KEY,
+      thread_id       TEXT NOT NULL REFERENCES threads(id),
+      task_id         TEXT,
+      requested_by    TEXT NOT NULL,
+      action          TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL,
+      state           TEXT NOT NULL DEFAULT 'pending',
+      note            TEXT,
+      created_at      TEXT NOT NULL,
+      decided_at      TEXT,
+      UNIQUE (requested_by, idempotency_key)
+    );
   `);
 }

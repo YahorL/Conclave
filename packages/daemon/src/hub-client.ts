@@ -1,8 +1,10 @@
 import type {
   AgentConfig,
   AgentStatusReport,
+  Approval,
   Artifact,
   Message,
+  NewApproval,
   NewMessage,
   Registry,
   Task,
@@ -85,6 +87,14 @@ export class HubClient {
 
   async setTaskState(id: string, state: TaskState): Promise<void> {
     await this.request("POST", `/api/tasks/${id}/state`, { state });
+  }
+
+  createApproval(input: NewApproval): Promise<Approval> {
+    return this.request("POST", "/api/approvals", input);
+  }
+
+  getTask(id: string): Promise<Task> {
+    return this.request("GET", `/api/tasks/${id}`);
   }
 
   createArtifact(input: {

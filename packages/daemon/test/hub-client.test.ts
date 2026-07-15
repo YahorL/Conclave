@@ -56,7 +56,7 @@ describe("HubClient against a live hub", () => {
       registry: {
         agents: [{
           id: "claude-code", name: "CC", runtime: "claude-code",
-          machine: "dev-box", workspace: "/tmp/x", role: "", allowedTools: [],
+          machine: "dev-box", workspace: "/tmp/x", role: "", allowedTools: [], dangerousActions: [],
         }],
       },
     });

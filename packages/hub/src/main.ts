@@ -10,6 +10,7 @@ import { AgentStatusStore } from "./status.js";
 import { TaskStore } from "./tasks.js";
 import { ArtifactStore } from "./artifacts.js";
 import { WorkspaceStore } from "./workspaces.js";
+import { ApprovalStore } from "./approvals.js";
 
 const token = process.env["CONCLAVE_TOKEN"];
 if (!token) {
@@ -32,10 +33,11 @@ const status = new AgentStatusStore();
 const tasks = new TaskStore(db);
 const artifacts = new ArtifactStore(db);
 const workspaces = new WorkspaceStore(db);
+const approvals = new ApprovalStore(db);
 const budgetUsd = Number(process.env["CONCLAVE_BUDGET_USD"] ?? 25);
 const webDir = process.env["CONCLAVE_WEB_DIR"];
 const app = await buildServer({
-  mailbox, token, registry, db, orchestrator, status, budgetUsd, tasks, artifacts, workspaces, webDir,
+  mailbox, token, registry, db, orchestrator, status, budgetUsd, tasks, artifacts, workspaces, approvals, webDir,
 });
 await app.listen({ port, host: "0.0.0.0" });
 console.log(`conclave hub: ${registry.agents.length} agent(s) registered`);

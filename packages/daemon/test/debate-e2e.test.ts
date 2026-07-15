@@ -21,7 +21,7 @@ import { AgentLoop } from "../src/agent-loop.js";
 const TOKEN = "e2e-token";
 
 function agentCfg(id: string, runtime: AgentConfig["runtime"]): AgentConfig {
-  return { id, name: id, runtime, machine: "m", workspace: `/tmp/${id}`, role: `You are ${id}.`, allowedTools: [] };
+  return { id, name: id, runtime, machine: "m", workspace: `/tmp/${id}`, role: `You are ${id}.`, allowedTools: [], dangerousActions: [] };
 }
 
 // Simulates a real agent: replies once, then calls end_thread (via setVerdict,

@@ -57,7 +57,7 @@ describe("mcp-bridge over stdio against a live hub", () => {
 
     const tools = await client.listTools();
     expect(tools.tools.map((t) => t.name).sort()).toEqual([
-      "check_inbox", "create_artifact", "end_thread", "send_message", "wait_for_reply",
+      "check_inbox", "create_artifact", "end_thread", "request_approval", "send_message", "wait_for_reply",
     ]);
 
     const inbox = await client.callTool({ name: "check_inbox", arguments: {} });

@@ -1,4 +1,4 @@
-import type { AgentStatus, Artifact, Message, Task, Thread, TurnRequest, Workspace } from "@conclave/shared";
+import type { AgentStatus, Approval, Artifact, Message, Task, Thread, TurnRequest, Workspace } from "@conclave/shared";
 import { config } from "./config.js";
 
 export type WsFrame =
@@ -8,7 +8,8 @@ export type WsFrame =
   | { type: "agent-status"; status: AgentStatus }
   | { type: "task"; task: Task }
   | { type: "artifact"; artifact: Artifact }
-  | { type: "workspace"; workspace: Workspace };
+  | { type: "workspace"; workspace: Workspace }
+  | { type: "approval"; approval: Approval };
 
 export function connectSocket(onFrame: (f: WsFrame) => void): () => void {
   let ws: WebSocket | null = null;

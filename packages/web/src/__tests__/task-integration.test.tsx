@@ -14,7 +14,7 @@ const SEED = {
     { id: THREAD_ID, kind: "task", workspace: "payments-service", participants: ["codex", "you"], state: "open", verdicts: {}, createdAt: "2026-07-13T21:00:00Z" },
   ],
   registry: {
-    agents: [{ id: "codex", name: "codex", runtime: "codex", machine: "local", workspace: "/tmp/ws", role: "", allowedTools: [] }],
+    agents: [{ id: "codex", name: "codex", runtime: "codex", machine: "local", workspace: "/tmp/ws", role: "", allowedTools: [], dangerousActions: [] }],
   },
   messages: [
     { id: 1, threadId: THREAD_ID, from: "you", to: [], type: "text", body: "add a unit test for the parser", artifacts: [], ts: "2026-07-13T21:00:30Z" },

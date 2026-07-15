@@ -13,7 +13,7 @@ const msg: Message = {
 it("renders name, plan badge, inline code, file link and mention", () => {
   useConclaveStore.getState().reset();
   useConclaveStore.getState().setAgents([
-    { id: "claude-code", name: "claude-code", runtime: "claude-code", machine: "m", workspace: "/w", role: "", allowedTools: [] },
+    { id: "claude-code", name: "claude-code", runtime: "claude-code", machine: "m", workspace: "/w", role: "", allowedTools: [], dangerousActions: [] },
   ]);
   render(<ChatMessage message={msg} />);
   expect(screen.getByText("codex")).toBeInTheDocument();

@@ -9,7 +9,7 @@ beforeEach(() => {
   const s = useConclaveStore.getState();
   s.reset();
   s.setThreads([{ id: "t1", kind: "chat", workspace: "w", participants: ["you", "codex"], state: "open", verdicts: {}, createdAt: "2026-07-13T10:00:00Z" }]);
-  s.setAgents([{ id: "codex", name: "codex", runtime: "codex", machine: "m", workspace: "/w", role: "", allowedTools: [] }]);
+  s.setAgents([{ id: "codex", name: "codex", runtime: "codex", machine: "m", workspace: "/w", role: "", allowedTools: [], dangerousActions: [] }]);
   s.setActiveThread("t1");
 });
 

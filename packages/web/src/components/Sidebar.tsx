@@ -32,6 +32,7 @@ export function Sidebar(): JSX.Element {
   const setMachines = useConclaveStore((s) => s.setMachines);
   const workspacesById = useConclaveStore((s) => s.workspacesById);
   const activeWorkspaceId = useConclaveStore((s) => s.activeWorkspaceId);
+  const approvalsById = useConclaveStore((s) => s.approvalsById);
 
   const openThread = async (id: string): Promise<void> => {
     setActiveThread(id);
@@ -45,6 +46,12 @@ export function Sidebar(): JSX.Element {
 
   const active = activeWorkspaceId ? workspacesById[activeWorkspaceId] : undefined;
   const shown = active ? threads.filter((t) => t.workspace === active.name) : threads;
+
+  const pendingApprovalThreads = new Set(
+    Object.values(approvalsById)
+      .filter((a) => a.state === "pending")
+      .map((a) => a.threadId),
+  );
 
   return (
     <aside className={styles.sidebar} data-testid="sidebar">
@@ -80,6 +87,9 @@ export function Sidebar(): JSX.Element {
               onClick={() => void openThread(t.id)}
             >
               <span className={styles.rowLabel}>{threadLabel(t.workspace, t.kind)}</span>
+              {pendingApprovalThreads.has(t.id) && (
+                <span className={styles.approvalBadge} data-testid="approval-badge">!</span>
+              )}
             </button>
           );
         })}
