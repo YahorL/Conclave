@@ -171,6 +171,26 @@ export function buildBridgeServer(
     },
   );
 
+  server.registerTool(
+    "delegate_task",
+    {
+      description:
+        "Delegate a task to another agent. Fails if you are not ACL-allowed to " +
+        "delegate to that assignee. The task runs in the assignee's workspace.",
+      inputSchema: {
+        assignee: z.string().min(1).describe("Target agent id, e.g. \"deploy\""),
+        spec: z.string().min(1).describe("What the assignee should do"),
+      },
+    },
+    async ({ assignee, spec }) => {
+      try {
+        return ok(await client.createTask({ assignee, spec, requestedBy: agentId }));
+      } catch (e) {
+        return err(e);
+      }
+    },
+  );
+
   return server;
 }
 
