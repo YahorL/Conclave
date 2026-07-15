@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { childEnv } from "./child-env.js";
 import { createInterface } from "node:readline";
 import type { RuntimeAdapter, TurnOptions, TurnResult } from "./adapter.js";
 import { parseStreamLine, summarizeTurn, type CliEvent } from "./stream-json.js";
@@ -24,7 +25,9 @@ export class ClaudeCodeAdapter implements RuntimeAdapter {
     if (opts.sessionId) args.push("--resume", opts.sessionId);
 
     return new Promise<TurnResult>((resolve, reject) => {
-      const child = spawn(this.bin, args, { cwd: opts.cwd, stdio: ["pipe", "pipe", "pipe"] });
+      const child = spawn(this.bin, args, {
+        cwd: opts.cwd, stdio: ["pipe", "pipe", "pipe"], env: childEnv(),
+      });
       const events: CliEvent[] = [];
       let stderr = "";
       let settled = false;

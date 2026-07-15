@@ -107,6 +107,7 @@ export function createTask(
 ): Task {
   const agent = deps.registry.agents.find((a) => a.id === input.assignee);
   if (!agent) throw new UnknownAssigneeError(input.assignee);
+  const requestedBy = input.requestedBy ?? "you";
 
   const thread = deps.mailbox.createThread({
     kind: "task",
@@ -127,7 +128,7 @@ export function createTask(
   deps.store.create(task);
   // to:[] — the task frame is the sole execution trigger; this message is a visible record.
   deps.mailbox.appendMessage(thread.id, {
-    from: "you", to: [], type: "text", body: input.spec, artifacts: [],
+    from: requestedBy, to: [], type: "text", body: input.spec, artifacts: [],
   });
   deps.mailbox.events.emit("task", task);
   return task;

@@ -25,19 +25,12 @@ describe("loadDaemonConfig", () => {
     expect(cfg.claudeBin).toBe("claude");
     expect(cfg.codexBin).toBe("codex");
     expect(cfg.stateFile).toBe("./daemon-state.json");
-    expect(cfg.allowAgentTriggers).toBe(false);
   });
 
   it("throws naming the missing variable", () => {
     expect(() => loadDaemonConfig({ ...base, CONCLAVE_TOKEN: undefined })).toThrow(
       /CONCLAVE_TOKEN/,
     );
-  });
-
-  it("parses CONCLAVE_ALLOW_AGENT_TRIGGERS=1", () => {
-    expect(
-      loadDaemonConfig({ ...base, CONCLAVE_ALLOW_AGENT_TRIGGERS: "1" }).allowAgentTriggers,
-    ).toBe(true);
   });
 });
 
@@ -58,6 +51,7 @@ describe("HubClient against a live hub", () => {
           id: "claude-code", name: "CC", runtime: "claude-code",
           machine: "dev-box", workspace: "/tmp/x", role: "", allowedTools: [], dangerousActions: [],
         }],
+        acl: [],
       },
     });
     await app.listen({ port: 0, host: "127.0.0.1" });

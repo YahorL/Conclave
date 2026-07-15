@@ -43,7 +43,7 @@ describe("loadRegistry", () => {
   });
 
   it("returns empty registry for a missing file", () => {
-    expect(loadRegistry("/nonexistent/registry.yaml")).toEqual({ agents: [] });
+    expect(loadRegistry("/nonexistent/registry.yaml")).toEqual({ agents: [], acl: [] });
   });
 
   it("throws on schema-invalid yaml", () => {
@@ -76,6 +76,6 @@ describe("GET /api/registry", () => {
     const mailbox = new Mailbox(openDb(join(dir, "t.db")));
     const app = await buildServer({ mailbox, token: TOKEN });
     const res = await app.inject({ method: "GET", url: "/api/registry", headers: AUTH });
-    expect(res.json<Registry>()).toEqual({ agents: [] });
+    expect(res.json<Registry>()).toEqual({ agents: [], acl: [] });
   });
 });

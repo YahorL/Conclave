@@ -15,6 +15,7 @@ export const HUB_MCP_TOOLS = [
   "mcp__hub__end_thread",
   "mcp__hub__create_artifact",
   "mcp__hub__request_approval",
+  "mcp__hub__delegate_task",
 ];
 
 const DEFAULT_BRIDGE = {
@@ -33,15 +34,10 @@ export function parseResetTime(text: string): string | undefined {
   return undefined;
 }
 
-export function shouldTrigger(
-  agent: AgentConfig,
-  m: Message,
-  allowAgentTriggers: boolean,
-): boolean {
+export function shouldTrigger(agent: AgentConfig, m: Message): boolean {
   if (!m.to.includes(agent.id)) return false;
   if (m.from === agent.id) return false;
   if (m.type !== "text" && m.type !== "proposal") return false;
-  if (m.from !== "you" && !allowAgentTriggers) return false;
   return true;
 }
 
@@ -127,7 +123,6 @@ export interface AgentLoopOptions {
   queue: TurnQueue;
   hubUrl: string;
   token: string;
-  allowAgentTriggers: boolean;
   bridgeCommand?: { command: string; args: string[] };
 }
 
@@ -272,7 +267,7 @@ export class AgentLoop {
     if (m.id <= this.opts.state.getCursor()) return;
     this.opts.state.setCursor(m.id);
     for (const agent of this.opts.agents) {
-      if (!shouldTrigger(agent, m, this.opts.allowAgentTriggers)) continue;
+      if (!shouldTrigger(agent, m)) continue;
       const turn = this.opts.queue
         .run(agent.id, () => this.runTurn(agent, m))
         .catch(() => undefined);
@@ -419,7 +414,8 @@ export class AgentLoop {
       await this.reportTurnStatus(agent, m.threadId, result);
       if (!result.isError && result.text.trim()) {
         await hub.postMessage(m.threadId, {
-          from: agent.id, to: [m.from], type: "text", body: result.text, artifacts: [],
+          from: agent.id, to: m.from === "you" ? [m.from] : [], type: "text",
+          body: result.text, artifacts: [],
         });
       }
     } catch (e) {

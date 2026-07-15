@@ -10,6 +10,7 @@ import type { AgentStatus, Approval, Artifact, Message, Task, Thread, TurnReques
 import {
   AgentStatusReportSchema,
   ApprovalDecisionSchema,
+  canCommunicate,
   ApprovalStateSchema,
   FsOpSchema,
   FsResponseSchema,
@@ -37,6 +38,7 @@ import { TaskStore, createTask, InvalidTransitionError, UnknownAssigneeError } f
 import { ArtifactStore, ArtifactTooLargeError } from "./artifacts.js";
 import { AlreadyDecidedError, ApprovalStore, decideApproval, fileApproval } from "./approvals.js";
 import { WorkspaceStore } from "./workspaces.js";
+import { assertAclAllowed } from "./acl.js";
 import { MachineRegistry, PendingRequests } from "./fs-tunnel.js";
 
 export interface ServerOptions {
@@ -63,7 +65,7 @@ const IdParamsSchema = z.object({ id: z.string().min(1) });
 
 export async function buildServer(opts: ServerOptions): Promise<FastifyInstance> {
   const { mailbox, token, registry: registryOpt } = opts;
-  const registry: Registry = registryOpt ?? { agents: [] };
+  const registry: Registry = registryOpt ?? { agents: [], acl: [] };
   const machines = new MachineRegistry();
   const pending = new PendingRequests();
   const app = Fastify();
@@ -116,6 +118,10 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const { id } = IdParamsSchema.parse(req.params);
     const body = parseOr400(NewMessageSchema, req.body, reply);
     if (!body) return;
+    const denied = assertAclAllowed(registry, body.from, body.to);
+    if (denied) {
+      return reply.code(403).send({ error: `acl: ${body.from} may not message ${denied}` });
+    }
     return reply.code(201).send(mailbox.appendMessage(id, body));
   });
 
@@ -207,6 +213,10 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     if (!opts.tasks) return reply.code(503).send({ error: "tasks store not configured" });
     const body = parseOr400(NewTaskSchema, req.body, reply);
     if (!body) return;
+    const requester = body.requestedBy ?? "you";
+    if (requester !== "you" && !canCommunicate(registry, requester, body.assignee)) {
+      return reply.code(403).send({ error: `acl: ${requester} may not delegate to ${body.assignee}` });
+    }
     const task = createTask({ mailbox, store: opts.tasks, registry }, body);
     return reply.code(201).send(task);
   });

@@ -80,7 +80,7 @@ describe("full debate end to end", () => {
         codex: new DebatingAdapter(client, "codex"),
       },
       state: new DaemonState(join(dir, "state.json")), queue: new TurnQueue(),
-      hubUrl, token: TOKEN, allowAgentTriggers: false,
+      hubUrl, token: TOKEN,
       bridgeCommand: { command: "node", args: ["/fake/bridge.js"] },
     });
     socket = new HubSocket({

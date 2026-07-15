@@ -6,6 +6,7 @@ import type {
   Message,
   NewApproval,
   NewMessage,
+  NewTask,
   Registry,
   Task,
   TaskState,
@@ -76,6 +77,10 @@ export class HubClient {
 
   async postStatus(report: AgentStatusReport): Promise<void> {
     await this.request("POST", "/api/status", report);
+  }
+
+  createTask(input: NewTask): Promise<Task> {
+    return this.request("POST", "/api/tasks", input);
   }
 
   listTasks(assignee: string, state: TaskState): Promise<Task[]> {

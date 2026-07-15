@@ -49,6 +49,7 @@ export const NewTaskSchema = z.object({
   assignee: z.string().min(1),
   spec: z.string().min(1),
   workspace: z.string().optional(),
+  requestedBy: z.string().min(1).optional(),
 });
 
 export type TurnRequest = z.infer<typeof TurnRequestSchema>;

@@ -46,7 +46,7 @@ describe("turn reporting", () => {
       agents: [AGENT], hub: new HubClient(hubUrl, TOKEN),
       adapters: { codex: new ScriptedAdapter(result), "claude-code": new ScriptedAdapter(result) },
       state: new DaemonState(join(dir, "state.json")), queue: new TurnQueue(),
-      hubUrl, token: TOKEN, allowAgentTriggers: false,
+      hubUrl, token: TOKEN,
       bridgeCommand: { command: "node", args: ["/fake/bridge.js"] },
     });
     return { mailbox, db, loop };

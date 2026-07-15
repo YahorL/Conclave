@@ -28,6 +28,6 @@ describe("RegistrySchema", () => {
   });
 
   it("defaults agents to empty", () => {
-    expect(RegistrySchema.parse({})).toEqual({ agents: [] });
+    expect(RegistrySchema.parse({})).toEqual({ agents: [], acl: [] });
   });
 });

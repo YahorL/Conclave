@@ -33,7 +33,6 @@ async function main(): Promise<void> {
     queue: new TurnQueue(),
     hubUrl: cfg.hubUrl,
     token: cfg.token,
-    allowAgentTriggers: cfg.allowAgentTriggers,
   });
 
   const socket = new HubSocket({
