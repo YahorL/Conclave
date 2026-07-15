@@ -37,6 +37,7 @@ import { TaskStore, createTask, InvalidTransitionError, UnknownAssigneeError } f
 import { ArtifactStore, ArtifactTooLargeError } from "./artifacts.js";
 import { AlreadyDecidedError, ApprovalStore, decideApproval, fileApproval } from "./approvals.js";
 import { WorkspaceStore } from "./workspaces.js";
+import { assertAclAllowed } from "./acl.js";
 import { MachineRegistry, PendingRequests } from "./fs-tunnel.js";
 
 export interface ServerOptions {
@@ -116,6 +117,10 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const { id } = IdParamsSchema.parse(req.params);
     const body = parseOr400(NewMessageSchema, req.body, reply);
     if (!body) return;
+    const denied = assertAclAllowed(registry, body.from, body.to);
+    if (denied) {
+      return reply.code(403).send({ error: `acl: ${body.from} may not message ${denied}` });
+    }
     return reply.code(201).send(mailbox.appendMessage(id, body));
   });
 
