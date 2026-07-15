@@ -10,6 +10,7 @@ import type { AgentStatus, Approval, Artifact, Message, Task, Thread, TurnReques
 import {
   AgentStatusReportSchema,
   ApprovalDecisionSchema,
+  canCommunicate,
   ApprovalStateSchema,
   FsOpSchema,
   FsResponseSchema,
@@ -212,6 +213,10 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     if (!opts.tasks) return reply.code(503).send({ error: "tasks store not configured" });
     const body = parseOr400(NewTaskSchema, req.body, reply);
     if (!body) return;
+    const requester = body.requestedBy ?? "you";
+    if (requester !== "you" && !canCommunicate(registry, requester, body.assignee)) {
+      return reply.code(403).send({ error: `acl: ${requester} may not delegate to ${body.assignee}` });
+    }
     const task = createTask({ mailbox, store: opts.tasks, registry }, body);
     return reply.code(201).send(task);
   });
