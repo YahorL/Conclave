@@ -58,6 +58,7 @@ describe("HubClient against a live hub", () => {
           id: "claude-code", name: "CC", runtime: "claude-code",
           machine: "dev-box", workspace: "/tmp/x", role: "", allowedTools: [], dangerousActions: [],
         }],
+        acl: [],
       },
     });
     await app.listen({ port: 0, host: "127.0.0.1" });
