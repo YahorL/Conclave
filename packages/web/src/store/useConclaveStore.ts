@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AgentConfig, AgentStatus, Approval, Artifact, FsEntry, Message, Task, Thread, UsageSummary, Workspace } from "@conclave/shared";
+import type { AgentConfig, AgentStatus, Approval, Artifact, FsEntry, Message, Task, TerminalInfo, Thread, UsageSummary, Workspace } from "@conclave/shared";
 import type { MachineInfo } from "../lib/hubClient.js";
 import type { WsFrame } from "../lib/socket.js";
 
@@ -22,6 +22,8 @@ interface State {
   workspacesById: Record<string, Workspace>;
   activeWorkspaceId: string | null;
   approvalsById: Record<string, Approval>;
+  terminals: TerminalInfo[];
+  activeTerminalId: string | null;
   setThreads(t: Thread[]): void;
   setMessages(threadId: string, m: Message[]): void;
   setAgents(a: AgentConfig[]): void;
@@ -37,6 +39,8 @@ interface State {
   setActiveFsFile(f: { machine: string; path: string } | null): void;
   setActiveWorkspace(id: string | null): void;
   setApprovals(a: Approval[]): void;
+  setTerminals(t: TerminalInfo[]): void;
+  setActiveTerminal(id: string | null): void;
   applyFrame(f: WsFrame): void;
   reset(): void;
 }
@@ -65,6 +69,8 @@ const initial = {
   workspacesById: {} as Record<string, Workspace>,
   activeWorkspaceId: null as string | null,
   approvalsById: {} as Record<string, Approval>,
+  terminals: [] as TerminalInfo[],
+  activeTerminalId: null as string | null,
 };
 
 export const useConclaveStore = create<State>((set) => ({
@@ -81,9 +87,10 @@ export const useConclaveStore = create<State>((set) => ({
       activeThreadId: id,
       activeArtifactId: null,
       activeFsFile: null,
+      activeTerminalId: null,
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
     })),
-  setActiveArtifact: (id) => set({ activeArtifactId: id, activeFsFile: null }),
+  setActiveArtifact: (id) => set({ activeArtifactId: id, activeFsFile: null, activeTerminalId: null }),
   openThread: (id) =>
     set((s) => ({
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
@@ -93,9 +100,12 @@ export const useConclaveStore = create<State>((set) => ({
   setSelectedMachine: (id) => set({ selectedMachine: id }),
   setFsChildren: (key, entries) =>
     set((s) => ({ fsChildren: { ...s.fsChildren, [key]: entries } })),
-  setActiveFsFile: (f) => set({ activeFsFile: f, activeArtifactId: null }),
+  setActiveFsFile: (f) => set({ activeFsFile: f, activeArtifactId: null, activeTerminalId: null }),
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
   setApprovals: (list) => set({ approvalsById: Object.fromEntries(list.map((a) => [a.id, a])) }),
+  setTerminals: (t) => set({ terminals: t }),
+  setActiveTerminal: (id) =>
+    set(id ? { activeTerminalId: id, activeArtifactId: null, activeFsFile: null } : { activeTerminalId: id }),
   applyFrame: (f) =>
     set((s) => {
       switch (f.type) {
@@ -122,6 +132,8 @@ export const useConclaveStore = create<State>((set) => ({
           return { workspacesById: { ...s.workspacesById, [f.workspace.id]: f.workspace } };
         case "approval":
           return { approvalsById: { ...s.approvalsById, [f.approval.id]: f.approval } };
+        case "terminal-list":
+          return { terminals: f.terminals };
         case "turn":
           return {};
         default:

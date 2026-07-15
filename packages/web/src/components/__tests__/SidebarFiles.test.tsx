@@ -11,7 +11,7 @@ beforeEach(() => {
 });
 
 it("switches to the files view when the files rail icon is clicked", async () => {
-  vi.spyOn(hubClient, "listMachines").mockResolvedValue([{ machine: "local", files: ["/w"], lastSeen: "x" }]);
+  vi.spyOn(hubClient, "listMachines").mockResolvedValue([{ machine: "local", files: ["/w"], terminals: false, lastSeen: "x" }]);
   render(<Sidebar />);
   await userEvent.click(screen.getByLabelText("files"));
   expect(useConclaveStore.getState().sidebarView).toBe("files");

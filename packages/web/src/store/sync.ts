@@ -23,6 +23,7 @@ export function startSync(): () => void {
     for (const w of wss) store.applyFrame({ type: "workspace", workspace: w });
     const approvals = await hubClient.listApprovals().catch(() => []);
     store.setApprovals(approvals);
+    void hubClient.listTerminals().then((t) => useConclaveStore.getState().setTerminals(t)).catch(() => {});
     const deepLink = new URLSearchParams(location.search).get("thread");
     if (deepLink && threads.some((t) => t.id === deepLink)) {
       store.setActiveThread(deepLink);

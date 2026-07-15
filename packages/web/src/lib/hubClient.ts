@@ -1,9 +1,9 @@
 import type {
-  AgentConfig, AgentStatus, Approval, Artifact, FsEntry, Message, NewMessage, NewTask, NewWorkspace, Registry, Task, Thread, UsageSummary, Workspace,
+  AgentConfig, AgentStatus, Approval, Artifact, FsEntry, Message, NewMessage, NewTask, NewWorkspace, Registry, Task, TerminalInfo, TerminalKind, Thread, UsageSummary, Workspace,
 } from "@conclave/shared";
 import { config } from "./config.js";
 
-export type MachineInfo = { machine: string; files: string[]; lastSeen: string };
+export type MachineInfo = { machine: string; files: string[]; terminals: boolean; lastSeen: string };
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -45,6 +45,10 @@ export const hubClient = {
   listApprovals: () => req<Approval[]>("GET", "/api/approvals"),
   decideApproval: (id: string, decision: "approved" | "denied", note?: string) =>
     req<Approval>("POST", `/api/approvals/${id}/decide`, { decision, ...(note ? { note } : {}) }),
+  listTerminals: () => req<TerminalInfo[]>("GET", "/api/terminals"),
+  spawnTerminal: (machine: string, kind: TerminalKind, cwd: string) =>
+    req<{ ok: boolean }>("POST", "/api/terminals", { machine, kind, cwd }),
+  killTerminal: (id: string) => req<{ ok: boolean }>("DELETE", `/api/terminals/${id}`),
   getVapidPublicKey: () => req<{ key: string }>("GET", "/api/push/vapid-public-key"),
   pushSubscribe: (sub: unknown) => req<{ ok: boolean }>("POST", "/api/push/subscribe", sub),
   pushUnsubscribe: (endpoint: string) =>
