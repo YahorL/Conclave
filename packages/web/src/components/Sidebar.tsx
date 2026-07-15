@@ -4,6 +4,7 @@ import { hubClient } from "../lib/hubClient.js";
 import { agentColorVar } from "../lib/agents.js";
 import { Avatar } from "./Avatar.js";
 import { FilesPanel } from "./FilesPanel.js";
+import { TerminalsSection } from "./TerminalsSection.js";
 import styles from "./Sidebar.module.css";
 
 function threadLabel(workspace: string | null, kind: string): string {
@@ -131,6 +132,8 @@ export function Sidebar(): JSX.Element {
           ))}
         </div>
       )}
+
+      <TerminalsSection />
         </>
       )}
     </aside>

@@ -8,6 +8,9 @@ export function SessionTabs(): JSX.Element {
   const setActive = useConclaveStore((s) => s.setActiveThread);
   const activeArtifactId = useConclaveStore((s) => s.activeArtifactId);
   const artifactsById = useConclaveStore((s) => s.artifactsById);
+  const activeTerminalId = useConclaveStore((s) => s.activeTerminalId);
+  const terminals = useConclaveStore((s) => s.terminals);
+  const activeTerminal = activeTerminalId ? terminals.find((t) => t.id === activeTerminalId) : undefined;
 
   const label = (id: string): string => threads.find((t) => t.id === id)?.workspace ?? "thread";
   const activeArtifact = activeArtifactId ? artifactsById[activeArtifactId] : undefined;
@@ -17,7 +20,7 @@ export function SessionTabs(): JSX.Element {
       {openIds.map((id) => (
         <button
           key={id}
-          className={id === activeId && !activeArtifactId ? styles.tabActive : styles.tab}
+          className={id === activeId && !activeArtifactId && !activeTerminalId ? styles.tabActive : styles.tab}
           onClick={() => setActive(id)}
         >
           <span className={styles.glyph}>❖</span>
@@ -28,6 +31,12 @@ export function SessionTabs(): JSX.Element {
         <button className={styles.tabActive} onClick={() => undefined}>
           <span className={styles.glyph}>▦</span>
           <em>{activeArtifact.name}</em>
+        </button>
+      )}
+      {activeTerminal && (
+        <button className={styles.tabActive} data-testid="terminal-tab" onClick={() => undefined}>
+          <span className={styles.glyph}>❯_</span>
+          {activeTerminal.label}
         </button>
       )}
     </div>
