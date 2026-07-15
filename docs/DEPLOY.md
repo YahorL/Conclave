@@ -97,3 +97,27 @@ Daemon env:
 
 Keep exactly **one daemon per machine** — two daemons for the same agent both
 claim a delegated task (the loser hits the hub's transition guard).
+
+## Notifications (web push)
+
+Enable via the bell toggle at the bottom of the live-status strip. Requires a
+secure context: `http://localhost` works as-is; any other origin needs the
+HTTPS setup above (Tailscale serve). **iOS:** install the PWA first (Share →
+Add to Home Screen from the HTTPS origin) — iOS only delivers web push to an
+installed app.
+
+You'll be notified when: an agent requests approval, a task fails, a thread
+settles, or an agent hits its usage limit. Clicking a notification opens the
+relevant thread.
+
+VAPID keys are generated on first hub boot and stored at `/data/vapid.json`.
+Deleting that file rotates the keys and silently invalidates every existing
+subscription — everyone must re-enable via the bell.
+
+### Manual smoke checklist (run after deploying; automated tests cannot cover delivery)
+
+1. Open the app, click the bell (grant the browser permission) → it reads "notifications on".
+2. Close the tab entirely. File a test approval from a terminal:
+   `curl -s -X POST -H "Authorization: Bearer $CONCLAVE_TOKEN" -H "content-type: application/json" -d '{"threadId":"<an open thread id>","requestedBy":"<an agent id>","action":"smoke test — ignore","idempotencyKey":"smoke-1"}' http://localhost:7777/api/approvals`
+3. A "Approval needed" notification appears on the device → click it → the app opens focused on that thread.
+4. Deny the approval in the UI (cleanup). Bell → "notifications off" unsubscribes.

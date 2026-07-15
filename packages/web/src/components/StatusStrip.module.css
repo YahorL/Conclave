@@ -120,3 +120,24 @@
   font-family: var(--font-mono);
   color: var(--text-primary);
 }
+.pushToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 5px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.pushToggle:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.pushToggle:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
