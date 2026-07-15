@@ -6,12 +6,15 @@ import websocket from "@fastify/websocket";
 import fastifyStatic from "@fastify/static";
 import { z } from "zod";
 import type Database from "better-sqlite3";
-import type { AgentStatus, Artifact, Message, Task, Thread, TurnRequest, Registry, Workspace } from "@conclave/shared";
+import type { AgentStatus, Approval, Artifact, Message, Task, Thread, TurnRequest, Registry, Workspace } from "@conclave/shared";
 import {
   AgentStatusReportSchema,
+  ApprovalDecisionSchema,
+  ApprovalStateSchema,
   FsOpSchema,
   FsResponseSchema,
   HelloSchema,
+  NewApprovalSchema,
   NewArtifactSchema,
   NewDebateSchema,
   NewMessageSchema,
@@ -32,6 +35,7 @@ import type { DebateOrchestrator } from "./orchestrator.js";
 import type { AgentStatusStore } from "./status.js";
 import { TaskStore, createTask, InvalidTransitionError, UnknownAssigneeError } from "./tasks.js";
 import { ArtifactStore, ArtifactTooLargeError } from "./artifacts.js";
+import { AlreadyDecidedError, ApprovalStore, decideApproval, fileApproval } from "./approvals.js";
 import { WorkspaceStore } from "./workspaces.js";
 import { MachineRegistry, PendingRequests } from "./fs-tunnel.js";
 
@@ -46,6 +50,7 @@ export interface ServerOptions {
   tasks?: TaskStore;
   artifacts?: ArtifactStore;
   workspaces?: WorkspaceStore;
+  approvals?: ApprovalStore;
   webDir?: string;
 }
 
@@ -236,6 +241,50 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     return task;
   });
 
+  app.post("/api/approvals", async (req, reply) => {
+    if (!opts.approvals) return reply.code(503).send({ error: "approvals store not configured" });
+    const body = parseOr400(NewApprovalSchema, req.body, reply);
+    if (!body) return;
+    const approval = fileApproval({ mailbox, store: opts.approvals, tasks: opts.tasks }, body);
+    return reply.code(201).send(approval);
+  });
+
+  app.get("/api/approvals", async (req, reply) => {
+    if (!opts.approvals) return reply.code(503).send({ error: "approvals store not configured" });
+    const q = req.query as { state?: string };
+    if (q.state) {
+      const state = ApprovalStateSchema.safeParse(q.state);
+      if (!state.success) return reply.code(400).send({ error: "invalid state" });
+      return opts.approvals.list(state.data);
+    }
+    return opts.approvals.list();
+  });
+
+  app.get("/api/approvals/:id", async (req, reply) => {
+    if (!opts.approvals) return reply.code(503).send({ error: "approvals store not configured" });
+    const { id } = IdParamsSchema.parse(req.params);
+    const approval = opts.approvals.get(id);
+    if (!approval) return reply.code(404).send({ error: `approval not found: ${id}` });
+    return approval;
+  });
+
+  app.post("/api/approvals/:id/decide", async (req, reply) => {
+    if (!opts.approvals) return reply.code(503).send({ error: "approvals store not configured" });
+    const { id } = IdParamsSchema.parse(req.params);
+    const body = parseOr400(ApprovalDecisionSchema, req.body, reply);
+    if (!body) return;
+    if (!opts.approvals.get(id)) return reply.code(404).send({ error: `approval not found: ${id}` });
+    try {
+      return decideApproval(
+        { mailbox, store: opts.approvals, tasks: opts.tasks },
+        id, body.decision, body.note,
+      );
+    } catch (e) {
+      if (e instanceof AlreadyDecidedError) return reply.code(409).send({ error: e.message });
+      throw e;
+    }
+  });
+
   app.post("/api/artifacts", async (req, reply) => {
     if (!opts.artifacts) return reply.code(503).send({ error: "artifacts store not configured" });
     const body = parseOr400(NewArtifactSchema, req.body, reply);
@@ -348,12 +397,16 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     const onWorkspace = (workspace: Workspace): void => {
       socket.send(JSON.stringify({ type: "workspace", workspace }));
     };
+    const onApproval = (approval: Approval): void => {
+      socket.send(JSON.stringify({ type: "approval", approval }));
+    };
     mailbox.events.on("message", onMessage);
     mailbox.events.on("thread", onThread);
     mailbox.events.on("turn", onTurn);
     mailbox.events.on("task", onTask);
     mailbox.events.on("artifact", onArtifact);
     mailbox.events.on("workspace", onWorkspace);
+    mailbox.events.on("approval", onApproval);
     if (opts.status) opts.status.events.on("agent-status", onStatus);
 
     socket.on("message", (raw: Buffer) => {
@@ -380,6 +433,7 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       mailbox.events.off("task", onTask);
       mailbox.events.off("artifact", onArtifact);
       mailbox.events.off("workspace", onWorkspace);
+      mailbox.events.off("approval", onApproval);
       if (opts.status) opts.status.events.off("agent-status", onStatus);
       machines.unregisterSocket(socket);
     });
