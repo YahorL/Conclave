@@ -64,7 +64,7 @@ const IdParamsSchema = z.object({ id: z.string().min(1) });
 
 export async function buildServer(opts: ServerOptions): Promise<FastifyInstance> {
   const { mailbox, token, registry: registryOpt } = opts;
-  const registry: Registry = registryOpt ?? { agents: [] };
+  const registry: Registry = registryOpt ?? { agents: [], acl: [] };
   const machines = new MachineRegistry();
   const pending = new PendingRequests();
   const app = Fastify();

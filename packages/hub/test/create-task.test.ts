@@ -9,6 +9,7 @@ import { TaskStore, UnknownAssigneeError, createTask } from "../src/tasks.js";
 
 const REGISTRY: Registry = {
   agents: [{ id: "codex", name: "codex", runtime: "codex", machine: "m", workspace: "/w", role: "", allowedTools: [], dangerousActions: [] }],
+  acl: [],
 };
 
 function setup() {

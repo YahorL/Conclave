@@ -17,6 +17,7 @@ const REGISTRY: Registry = {
     id: "codex", name: "codex", runtime: "codex", machine: "m1",
     workspace: "/w", role: "", allowedTools: [], dangerousActions: [],
   }],
+  acl: [],
 };
 
 describe("approvals API", () => {
