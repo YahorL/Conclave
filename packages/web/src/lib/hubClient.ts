@@ -1,5 +1,5 @@
 import type {
-  AgentConfig, AgentStatus, Artifact, FsEntry, Message, NewMessage, NewTask, NewWorkspace, Registry, Task, Thread, UsageSummary, Workspace,
+  AgentConfig, AgentStatus, Approval, Artifact, FsEntry, Message, NewMessage, NewTask, NewWorkspace, Registry, Task, Thread, UsageSummary, Workspace,
 } from "@conclave/shared";
 import { config } from "./config.js";
 
@@ -42,4 +42,7 @@ export const hubClient = {
     req<{ content: string }>("POST", `/api/fs/${machine}/read`, { path }),
   createWorkspace: (input: NewWorkspace) => req<Workspace>("POST", "/api/workspaces", input),
   listWorkspaces: () => req<Workspace[]>("GET", "/api/workspaces"),
+  listApprovals: () => req<Approval[]>("GET", "/api/approvals"),
+  decideApproval: (id: string, decision: "approved" | "denied", note?: string) =>
+    req<Approval>("POST", `/api/approvals/${id}/decide`, { decision, ...(note ? { note } : {}) }),
 };

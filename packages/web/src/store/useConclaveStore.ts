@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AgentConfig, AgentStatus, Artifact, FsEntry, Message, Task, Thread, UsageSummary, Workspace } from "@conclave/shared";
+import type { AgentConfig, AgentStatus, Approval, Artifact, FsEntry, Message, Task, Thread, UsageSummary, Workspace } from "@conclave/shared";
 import type { MachineInfo } from "../lib/hubClient.js";
 import type { WsFrame } from "../lib/socket.js";
 
@@ -21,6 +21,7 @@ interface State {
   activeFsFile: { machine: string; path: string } | null;
   workspacesById: Record<string, Workspace>;
   activeWorkspaceId: string | null;
+  approvalsById: Record<string, Approval>;
   setThreads(t: Thread[]): void;
   setMessages(threadId: string, m: Message[]): void;
   setAgents(a: AgentConfig[]): void;
@@ -35,6 +36,7 @@ interface State {
   setFsChildren(key: string, entries: FsEntry[]): void;
   setActiveFsFile(f: { machine: string; path: string } | null): void;
   setActiveWorkspace(id: string | null): void;
+  setApprovals(a: Approval[]): void;
   applyFrame(f: WsFrame): void;
   reset(): void;
 }
@@ -62,6 +64,7 @@ const initial = {
   activeFsFile: null as { machine: string; path: string } | null,
   workspacesById: {} as Record<string, Workspace>,
   activeWorkspaceId: null as string | null,
+  approvalsById: {} as Record<string, Approval>,
 };
 
 export const useConclaveStore = create<State>((set) => ({
@@ -92,6 +95,7 @@ export const useConclaveStore = create<State>((set) => ({
     set((s) => ({ fsChildren: { ...s.fsChildren, [key]: entries } })),
   setActiveFsFile: (f) => set({ activeFsFile: f, activeArtifactId: null }),
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
+  setApprovals: (list) => set({ approvalsById: Object.fromEntries(list.map((a) => [a.id, a])) }),
   applyFrame: (f) =>
     set((s) => {
       switch (f.type) {
@@ -116,6 +120,8 @@ export const useConclaveStore = create<State>((set) => ({
           return { artifactsById: { ...s.artifactsById, [f.artifact.id]: f.artifact } };
         case "workspace":
           return { workspacesById: { ...s.workspacesById, [f.workspace.id]: f.workspace } };
+        case "approval":
+          return { approvalsById: { ...s.approvalsById, [f.approval.id]: f.approval } };
         case "turn":
           return {};
         default:
