@@ -30,6 +30,7 @@ function fakeHub() {
     postUsage: vi.fn(async () => undefined),
     postStatus: vi.fn(async () => undefined),
     listTasks: vi.fn(async () => []),
+    getTask: vi.fn(async () => task({ state: "running" })),
   } as unknown as HubClient;
   return { hub, states, messages };
 }
@@ -74,6 +75,17 @@ describe("daemon task execution", () => {
     loop.handleTask(task());
     await loop.idle();
     expect(runTurn).toHaveBeenCalledOnce();
+  });
+
+  it("leaves the task paused when an approval flipped it to input-required", async () => {
+    const result: TurnResult = { sessionId: "s", text: "requested approval", isError: false, costUsd: 0 };
+    const adapter: RuntimeAdapter = { runTurn: vi.fn(async () => result) };
+    const { hub, states } = fakeHub();
+    (hub.getTask as ReturnType<typeof vi.fn>).mockResolvedValue(task({ state: "input-required" }));
+    const loop = loopWith(adapter, hub);
+    loop.handleTask(task());
+    await loop.idle();
+    expect(states).toEqual(["running"]); // no done/failed
   });
 
   it("ignores tasks for agents on other machines", async () => {

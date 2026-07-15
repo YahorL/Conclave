@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import type { AgentConfig, AgentRuntime, Message, Task, TurnRequest } from "@conclave/shared";
+import type { AgentConfig, AgentRuntime, Approval, Message, Task, TurnRequest } from "@conclave/shared";
 import type { RuntimeAdapter, TurnResult } from "./adapter.js";
 import type { DaemonState } from "./daemon-state.js";
 import type { HubClient } from "./hub-client.js";
@@ -14,6 +14,7 @@ export const HUB_MCP_TOOLS = [
   "mcp__hub__wait_for_reply",
   "mcp__hub__end_thread",
   "mcp__hub__create_artifact",
+  "mcp__hub__request_approval",
 ];
 
 const DEFAULT_BRIDGE = {
@@ -44,6 +45,15 @@ export function shouldTrigger(
   return true;
 }
 
+function dangerClause(agent: AgentConfig): string {
+  if (agent.dangerousActions.length === 0) return "";
+  return (
+    `\n\nDANGEROUS ACTIONS — before doing any of the following you MUST call the ` +
+    `request_approval tool and then end your turn to wait for the decision: ` +
+    `${agent.dangerousActions.join("; ")}.`
+  );
+}
+
 export function buildTurnPrompt(agent: AgentConfig, m: Message, isFirstTurn: boolean): string {
   if (!isFirstTurn) return `[${m.from}]: ${m.body}`;
   const role = agent.role ? `${agent.role}\n\n` : "";
@@ -51,7 +61,7 @@ export function buildTurnPrompt(agent: AgentConfig, m: Message, isFirstTurn: boo
     `${role}You are agent "${agent.id}" in Conclave thread ${m.threadId}. ` +
     `Hub MCP tools are available: send_message, check_inbox, wait_for_reply, end_thread. ` +
     `Your final response text is posted to the thread automatically — use send_message only ` +
-    `for additional mid-turn messages.\n\n[${m.from}]: ${m.body}`
+    `for additional mid-turn messages.\n\n[${m.from}]: ${m.body}${dangerClause(agent)}`
   );
 }
 
@@ -72,7 +82,7 @@ export function buildDebatePrompt(
     `Hub MCP tools are available: send_message, check_inbox, wait_for_reply, end_thread. ` +
     `When your position is final, call end_thread with a verdict (approve / reject / short ` +
     `position summary). Your final response text is posted to the thread automatically.` +
-    `\n\nThread so far:\n\n${rendered}${instruction}`
+    `\n\nThread so far:\n\n${rendered}${instruction}${dangerClause(agent)}`
   );
 }
 
@@ -82,7 +92,16 @@ export function buildTaskPrompt(agent: AgentConfig, task: Task): string {
     `${role}You are agent "${agent.id}" in Conclave task thread ${task.threadId}. ` +
     `Hub MCP tools are available: send_message, check_inbox, wait_for_reply, end_thread. ` +
     `Delegated task:\n\n${task.spec}\n\n` +
-    `Work in this workspace. Your final response text is posted as the task result.`
+    `Work in this workspace. Your final response text is posted as the task result.` +
+    `${dangerClause(agent)}`
+  );
+}
+
+export function buildApprovalResumePrompt(a: Approval): string {
+  const note = a.note ? `: ${a.note}` : "";
+  return (
+    `Your approval request "${a.action}" was ${a.state}${note}. ` +
+    `Continue the task accordingly; if denied, adapt or wrap up and report what you did.`
   );
 }
 
@@ -129,6 +148,7 @@ export async function runCatchUp(
 export class AgentLoop {
   private readonly inFlight = new Set<Promise<void>>();
   private readonly startedTasks = new Set<string>();
+  private readonly handledApprovals = new Set<string>();
 
   constructor(private readonly opts: AgentLoopOptions) {}
 
@@ -156,29 +176,95 @@ export class AgentLoop {
         allowedTools: [...agent.allowedTools, ...HUB_MCP_TOOLS],
         mcpServers: this.bridgeConfig(task.threadId, agent.id),
       });
-      await this.reportTurn(agent, task.threadId, result);
-      await this.reportTurnStatus(agent, task.threadId, result);
-      if (result.isError) {
-        await hub.setTaskState(task.id, "failed");
-        return;
-      }
-      if (result.text.trim()) {
-        await hub.postMessage(task.threadId, {
-          from: agent.id, to: [], type: "text", body: result.text, artifacts: [],
-        });
-      }
-      await hub.setTaskState(task.id, "done");
+      if (result.sessionId) this.opts.state.setSession(task.threadId, agent.id, result.sessionId);
+      await this.finishTaskTurn(agent, task.id, task.threadId, result);
     } catch (e) {
-      await this.postFailure(agent, task.threadId, e);
-      await this.reportStatus(agent, "idle", "", task.threadId);
-      try {
-        await hub.setTaskState(task.id, "failed");
-      } catch (stateErr) {
-        console.error(
-          `agent ${agent.id}: failed to mark task ${task.id} failed:`,
-          stateErr instanceof Error ? stateErr.message : stateErr,
-        );
-      }
+      await this.failTask(agent, task.id, task.threadId, e);
+    }
+  }
+
+  // Shared completion for task turns (initial and approval-resumed): report,
+  // post the result, then either pause (a pending approval flipped the task to
+  // input-required), finish, or leave an already-finished task alone.
+  private async finishTaskTurn(
+    agent: AgentConfig,
+    taskId: string,
+    threadId: string,
+    result: TurnResult,
+  ): Promise<void> {
+    const { hub } = this.opts;
+    await this.reportTurn(agent, threadId, result);
+    await this.reportTurnStatus(agent, threadId, result);
+    if (result.isError) {
+      await hub.setTaskState(taskId, "failed");
+      return;
+    }
+    if (result.text.trim()) {
+      await hub.postMessage(threadId, {
+        from: agent.id, to: [], type: "text", body: result.text, artifacts: [],
+      });
+    }
+    const current = await hub.getTask(taskId);
+    if (current.state === "input-required") {
+      await this.reportStatus(agent, "blocked", "awaiting approval", threadId);
+      return;
+    }
+    if (current.state === "running") await hub.setTaskState(taskId, "done");
+  }
+
+  private async failTask(agent: AgentConfig, taskId: string, threadId: string, e: unknown): Promise<void> {
+    await this.postFailure(agent, threadId, e);
+    await this.reportStatus(agent, "idle", "", threadId);
+    try {
+      await this.opts.hub.setTaskState(taskId, "failed");
+    } catch (stateErr) {
+      console.error(
+        `agent ${agent.id}: failed to mark task ${taskId} failed:`,
+        stateErr instanceof Error ? stateErr.message : stateErr,
+      );
+    }
+  }
+
+  handleApproval(approval: Approval): void {
+    if (approval.state === "pending" || !approval.taskId) return;
+    if (this.handledApprovals.has(approval.id)) return;
+    const agent = this.opts.agents.find((a) => a.id === approval.requestedBy);
+    if (!agent) return;
+    this.handledApprovals.add(approval.id);
+    const work = this.opts.queue
+      .run(agent.id, () => this.resumeAfterApproval(agent, approval))
+      .catch(() => undefined);
+    this.inFlight.add(work);
+    void work.finally(() => this.inFlight.delete(work));
+  }
+
+  private async resumeAfterApproval(agent: AgentConfig, approval: Approval): Promise<void> {
+    const { hub, state } = this.opts;
+    const taskId = approval.taskId!;
+    const threadId = approval.threadId;
+    try {
+      // The hub flips input-required → running on decide; anything else means
+      // the task already finished (or another turn owns it) — do not resume.
+      const task = await hub.getTask(taskId);
+      if (task.state !== "running") return;
+      await this.reportStatus(agent, "running", `task ${taskId}`, threadId);
+      const adapter = this.opts.adapters[agent.runtime];
+      if (!adapter) throw new Error(`no adapter for runtime ${agent.runtime}`);
+      const sessionId = state.getSession(threadId, agent.id);
+      const prompt = sessionId
+        ? buildApprovalResumePrompt(approval)
+        : `${buildTaskPrompt(agent, task)}\n\n${buildApprovalResumePrompt(approval)}`;
+      const result = await adapter.runTurn({
+        cwd: agent.workspace,
+        prompt,
+        sessionId,
+        allowedTools: [...agent.allowedTools, ...HUB_MCP_TOOLS],
+        mcpServers: this.bridgeConfig(threadId, agent.id),
+      });
+      if (result.sessionId) state.setSession(threadId, agent.id, result.sessionId);
+      await this.finishTaskTurn(agent, taskId, threadId, result);
+    } catch (e) {
+      await this.failTask(agent, taskId, threadId, e);
     }
   }
 

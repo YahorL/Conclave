@@ -1,9 +1,11 @@
 import WebSocket from "ws";
 import {
+  ApprovalSchema,
   FsRequestSchema,
   MessageSchema,
   TaskSchema,
   TurnRequestSchema,
+  type Approval,
   type FsRequest,
   type Message,
   type Task,
@@ -17,6 +19,7 @@ export interface HubSocketOptions {
   onMessage: (m: Message) => void;
   onTurn?: (turn: TurnRequest) => void;
   onTask?: (task: Task) => void;
+  onApproval?: (a: Approval) => void;
   onFsRequest?: (req: FsRequest) => void;
   reconnectDelayMs?: number;
 }
@@ -86,6 +89,11 @@ export class HubSocket {
         if (candidate.type === "task" && this.opts.onTask) {
           const parsedTask = TaskSchema.safeParse((candidate as { task?: unknown }).task);
           if (parsedTask.success) this.opts.onTask(parsedTask.data);
+          return;
+        }
+        if (candidate.type === "approval" && this.opts.onApproval) {
+          const parsedApproval = ApprovalSchema.safeParse((candidate as { approval?: unknown }).approval);
+          if (parsedApproval.success) this.opts.onApproval(parsedApproval.data);
           return;
         }
         if (candidate.type === "fs-request" && this.opts.onFsRequest) {

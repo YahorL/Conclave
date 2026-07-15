@@ -55,6 +55,9 @@ async function main(): Promise<void> {
     onTask: (task) => {
       loop.handleTask(task);
     },
+    onApproval: (a) => {
+      loop.handleApproval(a);
+    },
     onFsRequest: (req) => {
       void (async () => socket.send({ type: "fs-response", ...(await fileService.handle(req)) }))();
     },
