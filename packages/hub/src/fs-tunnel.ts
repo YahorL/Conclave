@@ -27,14 +27,15 @@ export class PendingRequests {
 export interface MachineConn {
   socket: FsSocket;
   roots: string[];
+  terminals: boolean;
   lastSeen: string;
 }
 
 export class MachineRegistry {
   private readonly byMachine = new Map<string, MachineConn>();
 
-  register(machine: string, socket: FsSocket, roots: string[]): void {
-    this.byMachine.set(machine, { socket, roots, lastSeen: new Date().toISOString() });
+  register(machine: string, socket: FsSocket, roots: string[], terminals = false): void {
+    this.byMachine.set(machine, { socket, roots, terminals, lastSeen: new Date().toISOString() });
   }
 
   unregisterSocket(socket: FsSocket): void {
@@ -47,9 +48,16 @@ export class MachineRegistry {
     return this.byMachine.get(machine);
   }
 
-  list(): Array<{ machine: string; files: string[]; lastSeen: string }> {
+  machineOfSocket(socket: FsSocket): string | undefined {
+    for (const [machine, conn] of this.byMachine) {
+      if (conn.socket === socket) return machine;
+    }
+    return undefined;
+  }
+
+  list(): Array<{ machine: string; files: string[]; terminals: boolean; lastSeen: string }> {
     return [...this.byMachine.entries()].map(([machine, c]) => ({
-      machine, files: c.roots, lastSeen: c.lastSeen,
+      machine, files: c.roots, terminals: c.terminals, lastSeen: c.lastSeen,
     }));
   }
 }
