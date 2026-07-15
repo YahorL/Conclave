@@ -21,7 +21,7 @@ const TOKEN = "al-token";
 const AGENT: AgentConfig = {
   id: "claude-code", name: "Claude Code", runtime: "claude-code",
   machine: "dev-box", workspace: "/tmp/agent-ws", role: "You are the dev agent.",
-  allowedTools: ["Read"],
+  allowedTools: ["Read"], dangerousActions: [],
 };
 
 function msg(partial: Partial<Message>): Message {

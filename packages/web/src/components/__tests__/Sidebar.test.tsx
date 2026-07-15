@@ -12,7 +12,7 @@ beforeEach(() => {
     { id: "t1", kind: "debate", workspace: "payments", participants: ["you", "codex"], state: "open", verdicts: {}, createdAt: "2026-07-13T10:00:00Z" },
   ]);
   s.setAgents([
-    { id: "codex", name: "codex", runtime: "codex", machine: "m1", workspace: "/w", role: "", allowedTools: [] },
+    { id: "codex", name: "codex", runtime: "codex", machine: "m1", workspace: "/w", role: "", allowedTools: [], dangerousActions: [] },
   ]);
   s.setStatuses([{ agent: "codex", status: "running", activity: "x", ts: "2026-07-13T10:00:00Z" }]);
 });

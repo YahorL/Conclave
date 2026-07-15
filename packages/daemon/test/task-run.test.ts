@@ -11,7 +11,7 @@ import type { RuntimeAdapter, TurnResult } from "../src/adapter.js";
 
 const AGENT: AgentConfig = {
   id: "codex", name: "codex", runtime: "codex", machine: "m1",
-  workspace: "/tmp/ws", role: "", allowedTools: [],
+  workspace: "/tmp/ws", role: "", allowedTools: [], dangerousActions: [],
 };
 
 function task(over: Partial<Task> = {}): Task {

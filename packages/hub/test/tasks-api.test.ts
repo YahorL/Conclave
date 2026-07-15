@@ -12,7 +12,7 @@ import { buildServer } from "../src/server.js";
 const TOKEN = "test-token";
 const AUTH = { authorization: `Bearer ${TOKEN}` };
 const REGISTRY: Registry = {
-  agents: [{ id: "codex", name: "codex", runtime: "codex", machine: "m", workspace: "/w", role: "", allowedTools: [] }],
+  agents: [{ id: "codex", name: "codex", runtime: "codex", machine: "m", workspace: "/w", role: "", allowedTools: [], dangerousActions: [] }],
 };
 
 async function freshServer(): Promise<FastifyInstance> {

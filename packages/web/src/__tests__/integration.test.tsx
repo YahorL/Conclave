@@ -15,9 +15,9 @@ const SEED = {
   ],
   registry: {
     agents: [
-      { id: "claude-code", name: "claude-code", runtime: "claude-code", machine: "local", workspace: "/tmp/ws", role: "implementer", allowedTools: [] },
-      { id: "codex", name: "codex", runtime: "codex", machine: "local", workspace: "/tmp/ws", role: "proposer", allowedTools: [] },
-      { id: "reviewer", name: "reviewer", runtime: "claude-code", machine: "local", workspace: "/tmp/ws", role: "reviewer", allowedTools: [] },
+      { id: "claude-code", name: "claude-code", runtime: "claude-code", machine: "local", workspace: "/tmp/ws", role: "implementer", allowedTools: [], dangerousActions: [] },
+      { id: "codex", name: "codex", runtime: "codex", machine: "local", workspace: "/tmp/ws", role: "proposer", allowedTools: [], dangerousActions: [] },
+      { id: "reviewer", name: "reviewer", runtime: "claude-code", machine: "local", workspace: "/tmp/ws", role: "reviewer", allowedTools: [], dangerousActions: [] },
     ],
   },
   status: [

@@ -5,3 +5,4 @@ export * from "./status.js";
 export * from "./artifact.js";
 export * from "./fs.js";
 export * from "./workspace.js";
+export * from "./approval.js";
