@@ -13,10 +13,21 @@ export const AgentConfigSchema = z.object({
   dangerousActions: z.array(z.string()).default([]),
 });
 
+export const AclPairSchema = z.tuple([z.string().min(1), z.string().min(1)]);
+
 export const RegistrySchema = z.object({
   agents: z.array(AgentConfigSchema).default([]),
+  acl: z.array(AclPairSchema).default([]),
 });
 
 export type AgentRuntime = z.infer<typeof AgentRuntimeSchema>;
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 export type Registry = z.infer<typeof RegistrySchema>;
+export type AclPair = z.infer<typeof AclPairSchema>;
+
+export function canCommunicate(registry: Registry, a: string, b: string): boolean {
+  if (a === "you" || b === "you") return true;
+  return registry.acl.some(
+    ([x, y]) => (x === a && y === b) || (x === b && y === a),
+  );
+}
