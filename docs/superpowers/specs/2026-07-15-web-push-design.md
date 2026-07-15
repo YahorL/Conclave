@@ -112,6 +112,10 @@ export class Notifier {
 }
 ```
 
+Fan-out uses `Promise.allSettled` — one dead/erroring endpoint must not block
+delivery to the others, and only 404/410 rejections prune (other errors are
+logged and the subscription kept).
+
 Trigger → payload mapping (only these states fire; all else is ignored):
 
 | Event (emitter) | Fires when | Payload |
@@ -155,11 +159,27 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
       const hit = cs.find((c) => "focus" in c);
-      return hit ? hit.focus() : self.clients.openWindow(url);
+      if (hit) {
+        // Focusing does not navigate — tell the open app where to go.
+        hit.postMessage({ type: "navigate", url });
+        return hit.focus();
+      }
+      return self.clients.openWindow(url);
     }),
   );
 });
 ```
+
+**Deep-link handling (required for click-through to work):** the web app has no
+URL-param handling today, so both arrival paths must be wired:
+
+- On load, the app reads `?thread=<id>` from `location.search` and, if present,
+  activates that thread (setActiveThread + load its messages) once threads are
+  hydrated.
+- `push.ts` registers a `navigator.serviceWorker` `"message"` listener: a
+  `{type:"navigate", url}` message parses the `thread` param and activates that
+  thread in the running app (covers the focus-an-open-window path, where no
+  navigation happens).
 
 **`packages/web/public/manifest.webmanifest`** — `name` "Conclave",
 `short_name` "Conclave", `start_url` "/", `display` "standalone",
@@ -184,8 +204,10 @@ export async function isPushEnabled(): Promise<boolean>;   // has an active subs
 Requests use the existing `hubClient` auth header.
 
 **UI — bell toggle in the StatusStrip** (`packages/web/src/components/StatusStrip.tsx`):
-a small monochrome button, lucide `Bell` when enabled / `BellOff` when not,
-reflecting `pushPermission()`. Click toggles `enablePush`/`disablePush`. When
+a small monochrome button, lucide `Bell` when enabled / `BellOff` when not.
+The on/off state comes from `isPushEnabled()` (an active subscription exists);
+`pushPermission()` only gates the interaction. Click toggles
+`enablePush`/`disablePush`. When
 permission is `denied`, the button is disabled with a title hint (browser-level
 block — nothing the app can override). Hidden entirely when `!pushSupported()`.
 Section-4a tokens only; no new colors.
