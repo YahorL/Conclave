@@ -4,11 +4,13 @@ import {
   FsRequestSchema,
   MessageSchema,
   TaskSchema,
+  TermToDaemonFrameSchema,
   TurnRequestSchema,
   type Approval,
   type FsRequest,
   type Message,
   type Task,
+  type TermToDaemonFrame,
   type TurnRequest,
 } from "@conclave/shared";
 
@@ -21,6 +23,7 @@ export interface HubSocketOptions {
   onTask?: (task: Task) => void;
   onApproval?: (a: Approval) => void;
   onFsRequest?: (req: FsRequest) => void;
+  onTerm?: (f: TermToDaemonFrame) => void;
   reconnectDelayMs?: number;
 }
 
@@ -99,6 +102,11 @@ export class HubSocket {
         if (candidate.type === "fs-request" && this.opts.onFsRequest) {
           const parsedReq = FsRequestSchema.safeParse(frame);
           if (parsedReq.success) this.opts.onFsRequest(parsedReq.data);
+          return;
+        }
+        if (typeof candidate.type === "string" && candidate.type.startsWith("term-") && this.opts.onTerm) {
+          const parsedTerm = TermToDaemonFrameSchema.safeParse(frame);
+          if (parsedTerm.success) this.opts.onTerm(parsedTerm.data);
           return;
         }
       } catch {

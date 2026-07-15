@@ -8,6 +8,8 @@ import { CodexAdapter } from "./codex-adapter.js";
 import { AgentLoop, runCatchUp, runTaskCatchUp } from "./agent-loop.js";
 import { GrantStore } from "./grants.js";
 import { FileService } from "./file-service.js";
+import { loadPty, TerminalService } from "./terminal-service.js";
+import { wireTerminals } from "./terminal-wiring.js";
 
 async function main(): Promise<void> {
   const cfg = loadDaemonConfig(process.env);
@@ -22,6 +24,20 @@ async function main(): Promise<void> {
   const state = new DaemonState(cfg.stateFile);
   const grants = new GrantStore(process.env["CONCLAVE_GRANTS_FILE"] ?? "./conclave-grants.json");
   const fileService = new FileService(grants);
+  const ptyMod = await loadPty();
+  const termsGranted = grants.terminalsGranted() && ptyMod !== null;
+  if (grants.terminalsGranted() && !ptyMod) {
+    console.warn("terminals granted but node-pty failed to load — terminals disabled");
+  }
+  const terminalService = ptyMod
+    ? new TerminalService(ptyMod, grants, {
+        machine: cfg.machine,
+        claudeBin: cfg.claudeBin,
+        codexBin: cfg.codexBin,
+        resolveAgentId: (kind) =>
+          agents.find((a) => (kind === "claude" ? a.runtime === "claude-code" : a.runtime === "codex"))?.id,
+      })
+    : null;
   const loop = new AgentLoop({
     agents,
     hub,
@@ -35,6 +51,7 @@ async function main(): Promise<void> {
     token: cfg.token,
   });
 
+  let terminals: ReturnType<typeof wireTerminals>;
   const socket = new HubSocket({
     hubUrl: cfg.hubUrl,
     token: cfg.token,
@@ -43,7 +60,8 @@ async function main(): Promise<void> {
       if (caught > 0) console.log(`catch-up: processed ${caught} message(s)`);
       const caughtTasks = await runTaskCatchUp(hub, agents, (t) => loop.handleTask(t));
       if (caughtTasks > 0) console.log(`task catch-up: picked up ${caughtTasks} task(s)`);
-      socket.send({ type: "hello", machine: cfg.machine, files: grants.roots() });
+      socket.send({ type: "hello", machine: cfg.machine, files: grants.roots(), terminals: termsGranted });
+      terminals.sendList();
     },
     onMessage: (m) => {
       loop.handleMessage(m);
@@ -60,6 +78,12 @@ async function main(): Promise<void> {
     onFsRequest: (req) => {
       void (async () => socket.send({ type: "fs-response", ...(await fileService.handle(req)) }))();
     },
+    onTerm: (f) => terminals.onTerm(f),
+  });
+  terminals = wireTerminals({
+    service: terminalService,
+    granted: termsGranted,
+    send: (frame) => socket.send(frame),
   });
   socket.start();
   console.log(`conclave daemon on ${cfg.machine}: watching ${agents.length} agent(s) via ${cfg.hubUrl}`);
