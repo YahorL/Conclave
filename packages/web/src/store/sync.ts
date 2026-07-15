@@ -20,6 +20,8 @@ export function startSync(): () => void {
     for (const a of artifacts) store.applyFrame({ type: "artifact", artifact: a });
     const wss = await hubClient.listWorkspaces().catch(() => []);
     for (const w of wss) store.applyFrame({ type: "workspace", workspace: w });
+    const approvals = await hubClient.listApprovals().catch(() => []);
+    store.setApprovals(approvals);
     if (!useConclaveStore.getState().activeThreadId && threads.length > 0) {
       store.setActiveThread(threads[0].id);
       store.setMessages(threads[0].id, await hubClient.listMessages(threads[0].id));
