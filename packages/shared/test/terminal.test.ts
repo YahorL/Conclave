@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   HelloSchema,
   SpawnTerminalSchema,
+  TakeoverTerminalSchema,
   TerminalInfoSchema,
   TermToDaemonFrameSchema,
 } from "../src/index.js";
@@ -31,6 +32,16 @@ describe("terminal schemas", () => {
     expect(TermToDaemonFrameSchema.safeParse({ type: "term-resize", terminalId: "t1", cols: 80, rows: 24 }).success).toBe(true);
     expect(TermToDaemonFrameSchema.safeParse({ type: "term-attach", terminalId: "t1", requestId: "r1" }).success).toBe(true);
     expect(TermToDaemonFrameSchema.safeParse({ type: "term-nope", terminalId: "t1" }).success).toBe(false);
+  });
+
+  it("includes term-takeover in the daemon-bound union", () => {
+    expect(TermToDaemonFrameSchema.safeParse({ type: "term-takeover", agentId: "codex", threadId: "t1" }).success).toBe(true);
+    expect(TermToDaemonFrameSchema.safeParse({ type: "term-takeover", agentId: "codex" }).success).toBe(false);
+  });
+
+  it("parses a TakeoverTerminal request", () => {
+    expect(TakeoverTerminalSchema.safeParse({ machine: "m1", agentId: "codex", threadId: "t1" }).success).toBe(true);
+    expect(TakeoverTerminalSchema.safeParse({ machine: "m1", agentId: "codex" }).success).toBe(false);
   });
 
   it("hello defaults terminals to false and accepts true", () => {
