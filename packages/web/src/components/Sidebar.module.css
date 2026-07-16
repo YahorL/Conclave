@@ -20,7 +20,7 @@
   align-items: center;
   justify-content: center;
   background: var(--hover);
-  border-bottom: 2px solid var(--sel-bg);
+  border-bottom: 2px solid var(--accent);
   color: var(--text-primary);
 }
 .railBtn {

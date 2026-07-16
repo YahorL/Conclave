@@ -67,7 +67,7 @@
 .progressRunning {
   height: 100%;
   width: 40%;
-  background: var(--sel-bg);
+  background: var(--accent);
   border-radius: 2px;
   animation: indeterminate 1.6s ease-in-out infinite;
 }

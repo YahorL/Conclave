@@ -21,7 +21,7 @@
 .tabActive {
   color: var(--text-primary);
   background: var(--surface);
-  border-top-color: var(--sel-bg);
+  border-top-color: var(--accent);
 }
 .glyph {
   color: var(--text-secondary);
