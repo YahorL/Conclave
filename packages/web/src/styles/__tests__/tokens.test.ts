@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { THEME_SURFACE } from "../../lib/theme.js";
 
 const css = readFileSync(new URL("../tokens.css", import.meta.url), "utf8");
 
@@ -44,7 +45,7 @@ describe("theme token structure", () => {
   it("includes the new role tokens in both themes", () => {
     for (const theme of ["black", "teal"]) {
       const names = tokenNames(block(`:root[data-theme="${theme}"]`));
-      for (const t of ["--accent", "--mention-bg", "--mention-text", "--inline-code-text", "--file-link", "--badge-text"]) {
+      for (const t of ["--accent", "--mention-bg", "--mention-text", "--inline-code-text", "--file-link", "--badge-text", "--badge-border", "--human-avatar-bg", "--human-avatar-text", "--progress-track"]) {
         expect(names).toContain(t);
       }
     }
@@ -56,5 +57,15 @@ describe("theme token structure", () => {
     expect(teal).toContain("--accent: #2dd4bf");
     expect(teal).toContain("--sel-bg: #124e46");
     expect(teal).toContain("--usage-normal: #2dd4bf");
+    expect(teal).toContain("--badge-text: #5eead4");
+    expect(teal).toContain("--progress-track: #1c2624");
+  });
+
+  it("keeps THEME_SURFACE (theme.ts mirror) in sync with each theme's --surface", () => {
+    for (const theme of ["black", "teal"] as const) {
+      expect(block(`:root[data-theme="${theme}"]`)).toContain(
+        `--surface: ${THEME_SURFACE[theme]}`,
+      );
+    }
   });
 });

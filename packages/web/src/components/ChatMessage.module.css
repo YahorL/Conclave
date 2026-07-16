@@ -21,7 +21,7 @@
   color: var(--text-muted);
 }
 .badge {
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--badge-border);
   color: var(--badge-text);
   border-radius: 9px;
   padding: 0 7px;

@@ -1,6 +1,7 @@
 export type Theme = "black" | "teal";
 
 const KEY = "conclave-theme";
+// NOTE: this allowlist is duplicated in index.html's inline no-flash script — a third theme must update both.
 const THEMES: Theme[] = ["black", "teal"];
 
 // Meta theme-color must match each theme's --surface. jsdom can't resolve CSS

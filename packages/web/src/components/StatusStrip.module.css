@@ -60,7 +60,7 @@
 }
 .progressTrack {
   height: 3px;
-  background: var(--border);
+  background: var(--progress-track);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -99,7 +99,7 @@
 .usageTrack {
   grid-column: 1 / -1;
   height: 5px;
-  background: var(--border);
+  background: var(--progress-track);
   border-radius: 3px;
   overflow: hidden;
 }

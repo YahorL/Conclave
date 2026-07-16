@@ -52,6 +52,10 @@
   --inline-code-text: #e5e5e5;
   --file-link: currentColor;
   --badge-text: #d4d4d4;
+  --badge-border: #333333;
+  --human-avatar-bg: #f5f5f5;
+  --human-avatar-text: #0a0a0a;
+  --progress-track: #1f1f1f;
 
   --artifact-plan: #f28b82;
   --artifact-ticket: #fbbf24;
@@ -88,7 +92,11 @@
   --mention-text: #2dd4bf;
   --inline-code-text: #5eead4;
   --file-link: #2dd4bf;
-  --badge-text: #93a5a1;
+  --badge-text: #5eead4;
+  --badge-border: #1e4a44;
+  --human-avatar-bg: #124e46;
+  --human-avatar-text: #5eead4;
+  --progress-track: #1c2624;
 
   --artifact-plan: #5eead4;
   --artifact-ticket: #5eead4;

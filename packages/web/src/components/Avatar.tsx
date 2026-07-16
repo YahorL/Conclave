@@ -7,7 +7,7 @@ export function Avatar({
   const isAgent = kind === "agent";
   const color = isAgent
     ? agentColorVar(name)
-    : { bg: "var(--sel-bg)", text: "var(--sel-text)" };
+    : { bg: "var(--human-avatar-bg)", text: "var(--human-avatar-text)" };
   return (
     <span
       className={styles.avatar}
