@@ -23,7 +23,9 @@ import {
   NewThreadSchema,
   NewWorkspaceSchema,
   PushSubscriptionSchema,
+  SpawnTerminalSchema,
   TaskStateSchema,
+  TermListFrameSchema,
   UsageReportSchema,
 } from "@conclave/shared";
 import {
@@ -41,6 +43,7 @@ import { AlreadyDecidedError, ApprovalStore, decideApproval, fileApproval } from
 import { WorkspaceStore } from "./workspaces.js";
 import { assertAclAllowed } from "./acl.js";
 import { MachineRegistry, PendingRequests } from "./fs-tunnel.js";
+import { TerminalRegistry } from "./terminal-registry.js";
 import type { PushStore } from "./push-store.js";
 
 export interface ServerOptions {
@@ -72,6 +75,12 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   const registry: Registry = registryOpt ?? { agents: [], acl: [] };
   const machines = new MachineRegistry();
   const pending = new PendingRequests();
+  const terminals = new TerminalRegistry();
+  const wsSockets = new Set<{ send(data: string): void }>();
+  const broadcastTerminalList = (): void => {
+    const payload = JSON.stringify({ type: "terminal-list", terminals: terminals.list() });
+    for (const s of wsSockets) s.send(payload);
+  };
   const app = Fastify();
   await app.register(websocket);
 
@@ -379,6 +388,28 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
 
   app.get("/api/machines", async () => machines.list());
 
+  app.get("/api/terminals", async () => terminals.list());
+
+  app.post("/api/terminals", async (req, reply) => {
+    const parsed = SpawnTerminalSchema.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid spawn request" });
+    const conn = machines.get(parsed.data.machine);
+    if (!conn) return reply.code(503).send({ error: `machine unreachable: ${parsed.data.machine}` });
+    if (!conn.terminals) return reply.code(403).send({ error: `terminals not granted on ${parsed.data.machine}` });
+    conn.socket.send(JSON.stringify({ type: "term-spawn", kind: parsed.data.kind, cwd: parsed.data.cwd }));
+    return reply.code(202).send({ ok: true });
+  });
+
+  app.delete("/api/terminals/:id", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const machine = terminals.machineOf(id);
+    if (!machine) return reply.code(404).send({ error: "unknown terminal" });
+    const conn = machines.get(machine);
+    if (!conn) return reply.code(503).send({ error: `machine unreachable: ${machine}` });
+    conn.socket.send(JSON.stringify({ type: "term-kill", terminalId: id }));
+    return { ok: true };
+  });
+
   app.post("/api/fs/:machine/:op", async (req, reply) => {
     const params = req.params as { machine: string; op: string };
     const op = FsOpSchema.safeParse(params.op);
@@ -414,6 +445,9 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   });
 
   app.get("/ws", { websocket: true }, (socket) => {
+    wsSockets.add(socket);
+    // snapshot so late-joining clients see the current terminal list
+    socket.send(JSON.stringify({ type: "terminal-list", terminals: terminals.list() }));
     const onMessage = (message: Message): void => {
       socket.send(JSON.stringify({ type: "message", message }));
     };
@@ -457,10 +491,41 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       const f = frame as { type?: unknown };
       if (f.type === "hello") {
         const parsed = HelloSchema.safeParse(frame);
-        if (parsed.success) machines.register(parsed.data.machine, socket, parsed.data.files);
+        if (parsed.success) machines.register(parsed.data.machine, socket, parsed.data.files, parsed.data.terminals);
       } else if (f.type === "fs-response") {
         const parsed = FsResponseSchema.safeParse(frame);
         if (parsed.success) pending.settle(parsed.data.id, parsed.data);
+      } else if (typeof f.type === "string" && f.type.startsWith("term-")) {
+        const raw2 = JSON.stringify(frame);
+        const fromMachine = machines.machineOfSocket(socket);
+        const t = frame as { type: string; terminalId?: string; requestId?: string };
+        if (fromMachine) {
+          // daemon-origin frames
+          if (t.type === "term-list") {
+            const parsed = TermListFrameSchema.safeParse(frame);
+            if (parsed.success) {
+              terminals.setList(fromMachine, parsed.data.terminals);
+              broadcastTerminalList();
+            }
+          } else if (t.type === "term-replay" && t.requestId) {
+            terminals.takePendingAttach(t.requestId)?.send(raw2);
+          } else if ((t.type === "term-data" || t.type === "term-exit") && t.terminalId) {
+            for (const c of terminals.attached(t.terminalId)) c.send(raw2);
+          } else if (t.type === "term-error") {
+            for (const s of wsSockets) s.send(raw2);
+          }
+        } else {
+          // client-origin frames
+          if (t.type === "term-attach" && t.terminalId && t.requestId) {
+            terminals.attach(t.terminalId, socket);
+            terminals.notePendingAttach(t.requestId, socket);
+          } else if (t.type === "term-detach" && t.terminalId) {
+            terminals.detach(t.terminalId, socket);
+            return;
+          }
+          const machine = t.terminalId ? terminals.machineOf(t.terminalId) : undefined;
+          if (machine) machines.get(machine)?.socket.send(raw2);
+        }
       }
     });
 
@@ -473,7 +538,14 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
       mailbox.events.off("workspace", onWorkspace);
       mailbox.events.off("approval", onApproval);
       if (opts.status) opts.status.events.off("agent-status", onStatus);
+      wsSockets.delete(socket);
+      terminals.detachSocket(socket);
+      const machine = machines.machineOfSocket(socket);
       machines.unregisterSocket(socket);
+      if (machine) {
+        terminals.clearMachine(machine);
+        broadcastTerminalList();
+      }
     });
   });
 

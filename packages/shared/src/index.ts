@@ -7,3 +7,4 @@ export * from "./fs.js";
 export * from "./workspace.js";
 export * from "./approval.js";
 export * from "./push.js";
+export * from "./terminal.js";
