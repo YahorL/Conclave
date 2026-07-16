@@ -70,7 +70,7 @@ Resume args (verbatim from the existing adapters): `claude` →
 ### daemon
 
 - **`TerminalService.spawn` (terminal-service.ts) — extend the argument object**
-  to `{ kind, cwd, resumeSessionId?, takeover? }`:
+  to `{ kind, cwd, resumeSessionId?, takeover?, agentId? }`:
   - Build pty args: `resumeSessionId` present →
     `kind === "claude" ? ["--resume", resumeSessionId] : ["resume", resumeSessionId]`;
     absent → `[]`. Pass these as the `node-pty` `spawn(bin, args, …)` second arg
@@ -78,13 +78,19 @@ Resume args (verbatim from the existing adapters): `claude` →
   - Label: `takeover` truthy → `` `${kind} ⇄ ${basename(cwd)}` ``; else the
     existing `` `${kind} · ${basename(cwd)}` ``. (Take-over always sets
     `takeover: true`, whether or not a session id was found — the ⇄ marks intent.)
+  - `agentId`: the take-over path passes the exact taken-over agent's id, and
+    the resulting `TerminalInfo.agentId` prefers `req.agentId` over
+    `resolveAgentId` (7.1's first-of-runtime heuristic). This is the id the web
+    auto-open matches on — it must be the real agent, not the first agent of
+    that runtime. A plain spawn with no explicit `agentId` keeps the
+    `resolveAgentId` fallback.
   - Everything else (ring buffer, events, jail, childEnv) is unchanged.
 - **`wireTerminals` (terminal-wiring.ts) — new dep + branch.** Add
   `resolveTakeover?: (agentId: string, threadId: string) => { kind: TerminalKind; cwd: string; resumeSessionId?: string } | null`
   to its deps. On a `term-takeover` frame: if no service/grant → `term-error`
   (same as spawn); else `const r = resolveTakeover?.(f.agentId, f.threadId)`;
   `null` → `term-error "unknown agent: <id>"`; otherwise
-  `service.spawn({ kind: r.kind, cwd: r.cwd, resumeSessionId: r.resumeSessionId, takeover: true })`.
+  `service.spawn({ kind: r.kind, cwd: r.cwd, resumeSessionId: r.resumeSessionId, takeover: true, agentId: f.agentId })`.
   The `list-changed` event emits the updated `term-list` as usual.
 - **`main.ts` — build `resolveTakeover`** from the already-available `agents`
   list + `DaemonState`:
@@ -117,8 +123,9 @@ Resume args (verbatim from the existing adapters): `claude` →
 - **`hubClient.takeoverTerminal(machine, agentId, threadId)`** →
   `POST /api/terminals/takeover` (returns `{ ok }`).
 - **Auto-open the resulting terminal.** Take-over spawn is async (202, terminal
-  arrives later via `term-list`). Keep a `pendingTakeover: { agentId: string;
-  since: number } | null` in the store (set on click). When a `terminal-list`
+  arrives later via `term-list`). Keep a `pendingTakeover: { agentId: string }
+  | null` in the store (set on click; a `since` expiry was considered and
+  deliberately dropped). When a `terminal-list`
   frame arrives, if there is a pending take-over and the new list contains a
   terminal with that `agentId` that was NOT in the previous list, `setActiveTerminal`
   it and clear the pending marker. (Match on agentId + "new since last list";
@@ -151,9 +158,11 @@ Resume args (verbatim from the existing adapters): `claude` →
 
 user in thread → ContextToolbar ⇄ → pick agent → POST /api/terminals/takeover
 {machine, agentId, threadId} → hub 202 + relay `term-takeover` → daemon
-`resolveTakeover` → `TerminalService.spawn({kind, cwd, resumeSessionId, takeover})`
-→ `<bin> --resume <id>` (or fresh) PTY → `term-list` broadcast → web auto-opens
-the new terminal tab → normal 7.1 attach/stream/kill from there.
+`resolveTakeover` → `TerminalService.spawn({kind, cwd, resumeSessionId, takeover, agentId})`
+(the exact taken-over agent id, so `TerminalInfo.agentId` is the real agent —
+not `resolveAgentId`'s first-of-runtime — which is what the web auto-open
+matches on) → `<bin> --resume <id>` (or fresh) PTY → `term-list` broadcast →
+web auto-opens the new terminal tab → normal 7.1 attach/stream/kill from there.
 
 ## Error handling
 

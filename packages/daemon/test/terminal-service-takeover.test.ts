@@ -27,12 +27,16 @@ function fakePty(): { mod: PtyModule; spawns: Spawned[] } {
   };
 }
 
-function svc(dir: string): { service: TerminalService; spawns: Spawned[] } {
+function svc(
+  dir: string,
+  extra?: { resolveAgentId?: (kind: string) => string | undefined },
+): { service: TerminalService; spawns: Spawned[] } {
   const grantsFile = join(dir, "grants.json");
   writeFileSync(grantsFile, JSON.stringify({ files: [dir], terminals: true }));
   const { mod, spawns } = fakePty();
   const service = new TerminalService(mod, new GrantStore(grantsFile), {
     machine: "m1", shellBin: "/bin/sh", claudeBin: "claude-bin", codexBin: "codex-bin",
+    ...extra,
   });
   return { service, spawns };
 }
@@ -67,5 +71,26 @@ describe("TerminalService take-over / resume args", () => {
     const info = service.spawn({ kind: "claude", cwd: dir });
     expect(spawns[0]!.args).toEqual([]);
     expect(info.label).toBe(`claude · ${info.cwd.split("/").pop()}`);
+  });
+
+  it("an explicit req.agentId wins over resolveAgentId (take-over reports the actual agent)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "conclave-tk-"));
+    const { service } = svc(dir, { resolveAgentId: () => "codex-1" });
+    const info = service.spawn({ kind: "codex", cwd: dir, agentId: "codex-2", takeover: true });
+    expect(info.agentId).toBe("codex-2");
+  });
+
+  it("an explicit req.agentId is used even without a resolveAgentId configured", () => {
+    const dir = mkdtempSync(join(tmpdir(), "conclave-tk-"));
+    const { service } = svc(dir);
+    const info = service.spawn({ kind: "codex", cwd: dir, agentId: "codex-2", takeover: true });
+    expect(info.agentId).toBe("codex-2");
+  });
+
+  it("a plain spawn without req.agentId still falls back to resolveAgentId", () => {
+    const dir = mkdtempSync(join(tmpdir(), "conclave-tk-"));
+    const { service } = svc(dir, { resolveAgentId: () => "codex-1" });
+    const info = service.spawn({ kind: "codex", cwd: dir });
+    expect(info.agentId).toBe("codex-1");
   });
 });

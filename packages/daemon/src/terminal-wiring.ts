@@ -62,7 +62,7 @@ export function wireTerminals(deps: TerminalWiringDeps): {
             send({ type: "term-error", message: `unknown agent: ${f.agentId}` });
             break;
           }
-          service.spawn({ kind: r.kind, cwd: r.cwd, resumeSessionId: r.resumeSessionId, takeover: true });
+          service.spawn({ kind: r.kind, cwd: r.cwd, resumeSessionId: r.resumeSessionId, takeover: true, agentId: f.agentId });
           break; // list-changed event sends the updated term-list
         }
         case "term-detach":

@@ -48,8 +48,6 @@ describe("ContextToolbar take-over", () => {
     seed(["you", "codex"], [agent("codex")]);
     render(<ContextToolbar />);
     await userEvent.click(screen.getByTestId("takeover"));
-    // if the single-candidate control is a direct button this is the click;
-    // if it opens a menu first, click the agent item next — implement as a direct button for one candidate.
     expect(mocks.takeoverTerminal).toHaveBeenCalledWith("m1", "codex", "t1");
     expect(useConclaveStore.getState().pendingTakeover).toEqual({ agentId: "codex" });
   });

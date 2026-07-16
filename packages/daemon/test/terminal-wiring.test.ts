@@ -99,7 +99,7 @@ describe("wireTerminals take-over", () => {
     });
     onTerm({ type: "term-takeover", agentId: "codex", threadId: "t1" });
     expect(spawns).toHaveLength(1);
-    expect(spawns[0]).toEqual({ kind: "codex", cwd: "/w", resumeSessionId: "sess-1", takeover: true });
+    expect(spawns[0]).toEqual({ kind: "codex", cwd: "/w", resumeSessionId: "sess-1", takeover: true, agentId: "codex" });
     expect(sent.some((f) => f["type"] === "term-error")).toBe(false);
   });
 

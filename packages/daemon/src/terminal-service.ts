@@ -64,7 +64,7 @@ export class TerminalService {
     private readonly opts: TerminalServiceOptions,
   ) {}
 
-  spawn(req: { kind: TerminalKind; cwd: string; resumeSessionId?: string; takeover?: boolean }): TerminalInfo {
+  spawn(req: { kind: TerminalKind; cwd: string; resumeSessionId?: string; takeover?: boolean; agentId?: string }): TerminalInfo {
     if (!this.grants.terminalsGranted()) throw new TerminalsNotGrantedError();
     const cwd = this.grants.resolveJailed(req.cwd);
     const shell = this.opts.shellBin ?? process.env["SHELL"] ?? "/bin/sh";
@@ -87,7 +87,7 @@ export class TerminalService {
       kind: req.kind,
       label,
       cwd,
-      agentId: req.kind === "shell" ? undefined : this.opts.resolveAgentId?.(req.kind),
+      agentId: req.kind === "shell" ? undefined : (req.agentId ?? this.opts.resolveAgentId?.(req.kind)),
       startedAt: new Date().toISOString(),
     };
     const pty = this.ptyMod.spawn(bin, resumeArgs, {
