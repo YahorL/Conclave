@@ -129,18 +129,22 @@ hub, and rendered in the web app. Default deny — enable per machine, on the ma
 
 ```bash
 npx tsx packages/daemon/src/cli.ts grant-terminals
-# and make sure at least one folder is granted; spawn cwds are jailed to granted roots
+# and make sure at least one folder is granted; spawn cwds start under granted roots
 npx tsx packages/daemon/src/cli.ts grant /home/me/proj
 ```
+
+Turn the capability back off with `npx tsx packages/daemon/src/cli.ts revoke-terminals`
+(then restart the daemon).
 
 Requirements on the daemon machine: build tools for node-pty (python3, make, g++ —
 same set better-sqlite3 needs). If node-pty fails to build, the daemon still runs;
 terminals just show as unavailable.
 
-> **Security note:** anyone who can reach the web app (and thus the token) gets an
-> interactive shell on every machine that granted `terminals`, jailed only by which
-> folders you granted. Grant it only on machines you're comfortable exposing to
-> everyone on the hub's network. Keep the hub localhost/tailnet-only.
+> **Security note:** anyone who can reach the web app gets an interactive shell
+> running as the daemon's user on every machine that granted `terminals`; the
+> granted folders only constrain where the shell *starts*, not what it can reach.
+> Grant it only on machines you're comfortable exposing to everyone on the hub's
+> network. Keep the hub localhost/tailnet-only.
 
 Manual smoke checklist (record the result; automated tests cover spawn/route/replay,
 not real TUI fidelity):

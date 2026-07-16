@@ -38,9 +38,11 @@ describe.skipIf(!ptyMod)("terminal end-to-end: browser-like client ↔ hub ↔ d
   let client: WebSocket;
 
   afterEach(async () => {
-    daemonSocket.stop();
-    client.close();
-    await app.close();
+    // Optional chaining so an early throw (before these are assigned) tears down
+    // what exists instead of masking the real failure with a TypeError.
+    daemonSocket?.stop();
+    client?.close();
+    await app?.close();
   });
 
   it("spawn → list → attach/replay → echo → kill → exit", async () => {

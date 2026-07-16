@@ -1,19 +1,24 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { GrantStore } from "../src/grants.js";
 import { loadPty, TerminalService } from "../src/terminal-service.js";
 import { wireTerminals } from "../src/terminal-wiring.js";
 
 const ptyMod = await loadPty();
 
+// Track every service so a mid-test assertion failure can't leak a live /bin/sh.
+const services: TerminalService[] = [];
+
 function realService(dir: string): TerminalService {
   const grantsFile = join(dir, "grants.json");
   writeFileSync(grantsFile, JSON.stringify({ files: [dir], terminals: true }));
-  return new TerminalService(ptyMod!, new GrantStore(grantsFile), {
+  const svc = new TerminalService(ptyMod!, new GrantStore(grantsFile), {
     machine: "m1", shellBin: "/bin/sh", claudeBin: "claude", codexBin: "codex",
   });
+  services.push(svc);
+  return svc;
 }
 
 async function waitFor(cond: () => boolean, ms = 5000): Promise<void> {
@@ -25,6 +30,12 @@ async function waitFor(cond: () => boolean, ms = 5000): Promise<void> {
 }
 
 describe("wireTerminals", () => {
+  afterEach(() => {
+    for (const svc of services.splice(0)) {
+      for (const t of svc.list()) svc.kill(t.id);
+    }
+  });
+
   it("without a service or grant, spawn requests produce term-error", () => {
     const sent: Array<Record<string, unknown>> = [];
     const { onTerm } = wireTerminals({ service: null, granted: false, send: (f) => sent.push(f as Record<string, unknown>) });

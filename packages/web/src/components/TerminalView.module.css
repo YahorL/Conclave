@@ -21,6 +21,9 @@
 .exited {
   color: var(--text-muted);
 }
+.lost {
+  color: var(--warn);
+}
 .kill {
   background: none;
   border: 1px solid var(--border-strong);

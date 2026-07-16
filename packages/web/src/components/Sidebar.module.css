@@ -208,3 +208,13 @@
 .spawnPicker button:hover {
   color: var(--text-primary);
 }
+.terminalError {
+  margin: 4px 12px 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  word-break: break-word;
+}

@@ -64,4 +64,28 @@ describe("TerminalView", () => {
     });
     expect(screen.getByText(/exited/)).toBeInTheDocument();
   });
+
+  it("discards term-data before the matching term-replay, then writes replay + post-replay data", () => {
+    render(<TerminalView />);
+    const attach = mocks.sendFrame.mock.calls.find((c) => (c[0] as { type: string }).type === "term-attach")?.[0] as {
+      requestId: string };
+    act(() => {
+      for (const fn of mocks.handlers) {
+        fn({ type: "term-data", terminalId: "t1", data: "cHJl" }); // "pre" — before replay, must be dropped
+        fn({ type: "term-replay", terminalId: "t1", requestId: attach.requestId, data: "aGk=" });
+        fn({ type: "term-data", terminalId: "t1", data: "eSE=" }); // post-replay, must be written
+      }
+    });
+    // only the replay + the post-replay live data, never the pre-replay byte
+    expect(mocks.term.write).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows a connection-lost notice when the terminal vanishes from the list without an exit", () => {
+    render(<TerminalView />);
+    expect(screen.queryByTestId("terminal-lost")).toBeNull();
+    act(() => {
+      useConclaveStore.getState().setTerminals([]);
+    });
+    expect(screen.getByTestId("terminal-lost")).toBeInTheDocument();
+  });
 });

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { TerminalKind } from "@conclave/shared";
 import { hubClient, type MachineInfo } from "../lib/hubClient.js";
+import { onTermFrame } from "../lib/socket.js";
 import { agentColorVar } from "../lib/agents.js";
 import { useConclaveStore } from "../store/useConclaveStore.js";
 import styles from "./Sidebar.module.css";
@@ -14,11 +15,21 @@ export function TerminalsSection(): JSX.Element {
   const [machine, setMachine] = useState("");
   const [kind, setKind] = useState<TerminalKind>("shell");
   const [cwd, setCwd] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const grantedMachines = machines.filter((m: MachineInfo) => m.terminals);
   const selected = grantedMachines.find((m) => m.machine === (machine || grantedMachines[0]?.machine));
 
+  // Surface daemon-side spawn failures (term-error) that otherwise vanish.
+  useEffect(() => {
+    const off = onTermFrame((f) => {
+      if (f.type === "term-error") setError(f.message ?? "terminal error");
+    });
+    return off;
+  }, []);
+
   const openPicker = (): void => {
+    setError(null); // reopening the picker clears a stale notice
     setPicking((p) => !p);
     if (machines.length === 0) void hubClient.listMachines().then(setMachines);
   };
@@ -28,7 +39,10 @@ export function TerminalsSection(): JSX.Element {
     if (!m) return;
     const dir = cwd || m.files[0];
     if (!dir) return;
-    void hubClient.spawnTerminal(m.machine, kind, dir);
+    setError(null);
+    void hubClient
+      .spawnTerminal(m.machine, kind, dir)
+      .catch((e: unknown) => setError(`spawn failed: ${e instanceof Error ? e.message : String(e)}`));
     setPicking(false);
   };
 
@@ -94,6 +108,11 @@ export function TerminalsSection(): JSX.Element {
           <button data-testid="spawn-submit" onClick={spawn}>
             spawn
           </button>
+        </div>
+      )}
+      {error && (
+        <div className={styles.terminalError} data-testid="terminal-error">
+          {error}
         </div>
       )}
     </div>

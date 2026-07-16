@@ -18,10 +18,16 @@ export function TerminalView(): JSX.Element | null {
   const info = useConclaveStore((s) => s.terminals.find((t) => t.id === s.activeTerminalId));
   const ref = useRef<HTMLDivElement>(null);
   const [exitCode, setExitCode] = useState<number | null>(null);
+  // Live term-data emitted between the hub marking us attached and the daemon
+  // snapshotting its ring buffer is delivered BOTH live and inside the replay.
+  // Drop live data until the matching replay arrives; the replay already holds
+  // everything emitted before the daemon processed the attach, so nothing is lost.
+  const replayed = useRef(false);
 
   useEffect(() => {
     if (!id || !ref.current) return;
     setExitCode(null);
+    replayed.current = false;
     const term = new Terminal({
       fontSize: 11,
       fontFamily: '"JetBrains Mono", monospace',
@@ -41,10 +47,11 @@ export function TerminalView(): JSX.Element | null {
 
     const requestId = crypto.randomUUID();
     const off = onTermFrame((f) => {
-      if (f.type === "term-replay" && f.requestId === requestId && f.terminalId === id && f.data) {
-        term.write(b64decode(f.data));
+      if (f.type === "term-replay" && f.requestId === requestId && f.terminalId === id) {
+        if (f.data) term.write(b64decode(f.data));
+        replayed.current = true; // even an empty replay opens the live-data gate
       } else if (f.type === "term-data" && f.terminalId === id && f.data) {
-        term.write(b64decode(f.data));
+        if (replayed.current) term.write(b64decode(f.data));
       } else if (f.type === "term-exit" && f.terminalId === id) {
         setExitCode(f.exitCode ?? 0);
       }
@@ -73,14 +80,22 @@ export function TerminalView(): JSX.Element | null {
 
   if (!id) return null;
 
+  // The terminal vanished from the list without a term-exit (e.g. the daemon
+  // disconnected and the hub cleared + rebroadcast). Distinct from "exited (n)".
+  const lost = !info && exitCode === null;
+
   return (
     <div className={styles.wrap} data-testid="terminal-view">
       <div className={styles.header}>
         <span className={styles.label}>{info?.label ?? id}</span>
         {exitCode !== null ? (
           <span className={styles.exited}>exited ({exitCode})</span>
+        ) : lost ? (
+          <span className={styles.lost} data-testid="terminal-lost">
+            connection lost
+          </span>
         ) : (
-          <button className={styles.kill} onClick={() => void hubClient.killTerminal(id)}>
+          <button className={styles.kill} onClick={() => void hubClient.killTerminal(id).catch(() => {})}>
             ✕ kill
           </button>
         )}
