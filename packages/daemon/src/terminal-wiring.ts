@@ -1,10 +1,14 @@
-import type { TermToDaemonFrame } from "@conclave/shared";
+import type { TermToDaemonFrame, TerminalKind } from "@conclave/shared";
 import type { TerminalService } from "./terminal-service.js";
 
 export interface TerminalWiringDeps {
   service: TerminalService | null;
   granted: boolean;
   send: (frame: unknown) => void;
+  resolveTakeover?: (
+    agentId: string,
+    threadId: string,
+  ) => { kind: TerminalKind; cwd: string; resumeSessionId?: string } | null;
 }
 
 // Frame handler for hub->daemon terminal traffic plus upstream event wiring.
@@ -31,7 +35,8 @@ export function wireTerminals(deps: TerminalWiringDeps): {
 
   const onTerm = (f: TermToDaemonFrame): void => {
     if (!service || !deps.granted) {
-      if (f.type === "term-spawn") send({ type: "term-error", message: "terminals not available on this machine" });
+      if (f.type === "term-spawn" || f.type === "term-takeover")
+        send({ type: "term-error", message: "terminals not available on this machine" });
       return;
     }
     try {
@@ -51,6 +56,15 @@ export function wireTerminals(deps: TerminalWiringDeps): {
         case "term-attach":
           send({ type: "term-replay", terminalId: f.terminalId, requestId: f.requestId, data: service.replay(f.terminalId) });
           break;
+        case "term-takeover": {
+          const r = deps.resolveTakeover?.(f.agentId, f.threadId);
+          if (!r) {
+            send({ type: "term-error", message: `unknown agent: ${f.agentId}` });
+            break;
+          }
+          service.spawn({ kind: r.kind, cwd: r.cwd, resumeSessionId: r.resumeSessionId, takeover: true });
+          break; // list-changed event sends the updated term-list
+        }
         case "term-detach":
           break; // hub-side bookkeeping only
       }
