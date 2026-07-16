@@ -49,6 +49,8 @@ export const hubClient = {
   spawnTerminal: (machine: string, kind: TerminalKind, cwd: string) =>
     req<{ ok: boolean }>("POST", "/api/terminals", { machine, kind, cwd }),
   killTerminal: (id: string) => req<{ ok: boolean }>("DELETE", `/api/terminals/${id}`),
+  takeoverTerminal: (machine: string, agentId: string, threadId: string) =>
+    req<{ ok: boolean }>("POST", "/api/terminals/takeover", { machine, agentId, threadId }),
   getVapidPublicKey: () => req<{ key: string }>("GET", "/api/push/vapid-public-key"),
   pushSubscribe: (sub: unknown) => req<{ ok: boolean }>("POST", "/api/push/subscribe", sub),
   pushUnsubscribe: (endpoint: string) =>
