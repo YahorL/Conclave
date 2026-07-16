@@ -26,3 +26,45 @@
 .state[data-task-state="done"] {
   color: var(--text-secondary-2);
 }
+.takeover {
+  background: none;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  padding: 1px 8px;
+  cursor: pointer;
+}
+.takeover:hover {
+  color: var(--text-primary);
+}
+.takeoverWrap {
+  position: relative;
+}
+.takeoverMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  z-index: 10;
+}
+.takeoverItem {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.takeoverItem:hover {
+  color: var(--text-primary);
+}
+.takeoverError {
+  color: var(--warn, var(--text-muted));
+  font-size: 11px;
+}

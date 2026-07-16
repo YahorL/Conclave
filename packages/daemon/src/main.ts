@@ -84,6 +84,13 @@ async function main(): Promise<void> {
     service: terminalService,
     granted: termsGranted,
     send: (frame) => socket.send(frame),
+    resolveTakeover: (agentId, threadId) => {
+      const a = agents.find((x) => x.id === agentId);
+      if (!a) return null;
+      const kind = a.runtime === "claude-code" ? "claude" : a.runtime === "codex" ? "codex" : null;
+      if (!kind) return null;
+      return { kind, cwd: a.workspace, resumeSessionId: state.getSession(threadId, agentId) };
+    },
   });
   socket.start();
   console.log(`conclave daemon on ${cfg.machine}: watching ${agents.length} agent(s) via ${cfg.hubUrl}`);

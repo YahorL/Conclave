@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -71,4 +72,53 @@ describe("wireTerminals", () => {
     onTerm({ type: "term-kill", terminalId: id });
     await waitFor(() => sent.some((f) => f["type"] === "term-exit"));
   }, 15000);
+});
+
+function fakeService(): { service: any; spawns: Array<Record<string, unknown>> } {
+  const spawns: Array<Record<string, unknown>> = [];
+  const events = new EventEmitter();
+  const service = {
+    events,
+    list: () => [],
+    spawn: (req: Record<string, unknown>) => { spawns.push(req); return { id: "term-x" }; },
+    kill: () => {}, write: () => {}, resize: () => {}, replay: () => "",
+  };
+  return { service, spawns };
+}
+
+describe("wireTerminals take-over", () => {
+  it("term-takeover resolves and spawns with resume args", () => {
+    const { service, spawns } = fakeService();
+    const sent: Array<Record<string, unknown>> = [];
+    const { onTerm } = wireTerminals({
+      service: service as never, granted: true, send: (f) => sent.push(f as Record<string, unknown>),
+      resolveTakeover: (agentId, threadId) =>
+        agentId === "codex" && threadId === "t1"
+          ? { kind: "codex", cwd: "/w", resumeSessionId: "sess-1" }
+          : null,
+    });
+    onTerm({ type: "term-takeover", agentId: "codex", threadId: "t1" });
+    expect(spawns).toHaveLength(1);
+    expect(spawns[0]).toEqual({ kind: "codex", cwd: "/w", resumeSessionId: "sess-1", takeover: true, agentId: "codex" });
+    expect(sent.some((f) => f["type"] === "term-error")).toBe(false);
+  });
+
+  it("term-takeover for an unknown agent sends term-error, no spawn", () => {
+    const { service, spawns } = fakeService();
+    const sent: Array<Record<string, unknown>> = [];
+    const { onTerm } = wireTerminals({
+      service: service as never, granted: true, send: (f) => sent.push(f as Record<string, unknown>),
+      resolveTakeover: () => null,
+    });
+    onTerm({ type: "term-takeover", agentId: "ghost", threadId: "t1" });
+    expect(spawns).toHaveLength(0);
+    expect(sent.find((f) => f["type"] === "term-error")).toBeTruthy();
+  });
+
+  it("term-takeover when ungranted sends term-error", () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const { onTerm } = wireTerminals({ service: null, granted: false, send: (f) => sent.push(f as Record<string, unknown>) });
+    onTerm({ type: "term-takeover", agentId: "codex", threadId: "t1" });
+    expect(sent.find((f) => f["type"] === "term-error")).toBeTruthy();
+  });
 });

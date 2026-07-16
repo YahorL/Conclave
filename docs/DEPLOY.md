@@ -155,3 +155,20 @@ not real TUI fidelity):
 4. Close the tab, reopen the terminal row — scrollback replays.
 5. Spawn a `claude` terminal — the TUI renders and takes keystrokes.
 6. Kill from the header — row disappears.
+
+### Take over a headless session
+
+An agent that has run headless in a thread can be "taken over": open its context
+toolbar (⇄ take over) to launch an interactive `claude --resume <session>` /
+`codex resume <session>` in a real terminal, continuing that conversation by hand.
+
+Requirements: the agent's `workspace` must be a **granted file root** on its
+machine (`grant <workspace>`), in addition to `grant-terminals`. Take-over opens
+a **new, independent** terminal — it never interrupts the running headless
+process; resuming a session the agent is still actively writing opens a parallel
+view of it. If the agent has no stored session for that thread yet, take-over
+starts a fresh interactive session in the workspace instead.
+
+Manual smoke (automated tests cover the resume ARGS and plumbing, not that the
+CLI actually restores the conversation): run a headless turn for an agent in a
+thread, then ⇄ take over → confirm the resumed TUI shows the prior context.

@@ -18,6 +18,12 @@ export const SpawnTerminalSchema = z.object({
   cwd: z.string().min(1),
 });
 
+export const TakeoverTerminalSchema = z.object({
+  machine: z.string().min(1),
+  agentId: z.string().min(1),
+  threadId: z.string().min(1),
+});
+
 // hub -> daemon (and client -> hub -> daemon) control/stream frames
 export const TermSpawnFrameSchema = z.object({
   type: z.literal("term-spawn"),
@@ -48,6 +54,11 @@ export const TermDetachFrameSchema = z.object({
   type: z.literal("term-detach"),
   terminalId: z.string().min(1),
 });
+export const TermTakeoverFrameSchema = z.object({
+  type: z.literal("term-takeover"),
+  agentId: z.string().min(1),
+  threadId: z.string().min(1),
+});
 export const TermToDaemonFrameSchema = z.discriminatedUnion("type", [
   TermSpawnFrameSchema,
   TermKillFrameSchema,
@@ -55,6 +66,7 @@ export const TermToDaemonFrameSchema = z.discriminatedUnion("type", [
   TermResizeFrameSchema,
   TermAttachFrameSchema,
   TermDetachFrameSchema,
+  TermTakeoverFrameSchema,
 ]);
 
 // daemon -> hub frames (term-data reuses TermDataFrameSchema)
@@ -81,4 +93,5 @@ export const TermErrorFrameSchema = z.object({
 export type TerminalKind = z.infer<typeof TerminalKindSchema>;
 export type TerminalInfo = z.infer<typeof TerminalInfoSchema>;
 export type SpawnTerminal = z.infer<typeof SpawnTerminalSchema>;
+export type TakeoverTerminal = z.infer<typeof TakeoverTerminalSchema>;
 export type TermToDaemonFrame = z.infer<typeof TermToDaemonFrameSchema>;

@@ -168,4 +168,58 @@ describe("hub terminal relay", () => {
     await waitFor(() => clientSeen.some((f) =>
       f["type"] === "terminal-list" && (f["terminals"] as unknown[]).length === 0));
   }, 15000);
+
+  it("POST /api/terminals/takeover relays term-takeover; 400/503/403 gates", async () => {
+    ({ app } = await makeApp());
+    const port = (app.server.address() as AddressInfo).port;
+
+    // no machine -> 503
+    let res = await app.inject({
+      method: "POST", url: "/api/terminals/takeover",
+      headers: { authorization: `Bearer ${TOKEN}` },
+      payload: { machine: "m1", agentId: "codex", threadId: "t1" },
+    });
+    expect(res.statusCode).toBe(503);
+
+    // bad body -> 400
+    res = await app.inject({
+      method: "POST", url: "/api/terminals/takeover",
+      headers: { authorization: `Bearer ${TOKEN}` },
+      payload: { machine: "m1", agentId: "codex" },
+    });
+    expect(res.statusCode).toBe(400);
+
+    const d = await daemon(port); // connects m1 with terminals:true + a term-list
+    await waitFor(async () => {
+      const r = await app.inject({ method: "GET", url: "/api/terminals", headers: { authorization: `Bearer ${TOKEN}` } });
+      return (JSON.parse(r.payload) as unknown[]).length === 1;
+    });
+
+    res = await app.inject({
+      method: "POST", url: "/api/terminals/takeover",
+      headers: { authorization: `Bearer ${TOKEN}` },
+      payload: { machine: "m1", agentId: "codex", threadId: "t1" },
+    });
+    expect(res.statusCode).toBe(202);
+    await waitFor(() => d.seen.some((f) =>
+      f["type"] === "term-takeover" && f["agentId"] === "codex" && f["threadId"] === "t1"));
+  }, 15000);
+
+  it("takeover on an ungranted machine -> 403", async () => {
+    ({ app } = await makeApp());
+    const port = (app.server.address() as AddressInfo).port;
+    const { ws } = await connect(port);
+    sockets.push(ws);
+    ws.send(JSON.stringify({ type: "hello", machine: "m1", files: ["/w"], terminals: false }));
+    await waitFor(async () => {
+      const r = await app.inject({ method: "GET", url: "/api/machines", headers: { authorization: `Bearer ${TOKEN}` } });
+      return (JSON.parse(r.payload) as unknown[]).length === 1;
+    });
+    const res = await app.inject({
+      method: "POST", url: "/api/terminals/takeover",
+      headers: { authorization: `Bearer ${TOKEN}` },
+      payload: { machine: "m1", agentId: "codex", threadId: "t1" },
+    });
+    expect(res.statusCode).toBe(403);
+  }, 15000);
 });

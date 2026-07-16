@@ -24,6 +24,7 @@ interface State {
   approvalsById: Record<string, Approval>;
   terminals: TerminalInfo[];
   activeTerminalId: string | null;
+  pendingTakeover: { agentId: string } | null;
   setThreads(t: Thread[]): void;
   setMessages(threadId: string, m: Message[]): void;
   setAgents(a: AgentConfig[]): void;
@@ -41,6 +42,7 @@ interface State {
   setApprovals(a: Approval[]): void;
   setTerminals(t: TerminalInfo[]): void;
   setActiveTerminal(id: string | null): void;
+  setPendingTakeover(v: { agentId: string } | null): void;
   applyFrame(f: WsFrame): void;
   reset(): void;
 }
@@ -71,6 +73,7 @@ const initial = {
   approvalsById: {} as Record<string, Approval>,
   terminals: [] as TerminalInfo[],
   activeTerminalId: null as string | null,
+  pendingTakeover: null as { agentId: string } | null,
 };
 
 export const useConclaveStore = create<State>((set) => ({
@@ -106,6 +109,7 @@ export const useConclaveStore = create<State>((set) => ({
   setTerminals: (t) => set({ terminals: t }),
   setActiveTerminal: (id) =>
     set(id ? { activeTerminalId: id, activeArtifactId: null, activeFsFile: null } : { activeTerminalId: id }),
+  setPendingTakeover: (v) => set({ pendingTakeover: v }),
   applyFrame: (f) =>
     set((s) => {
       switch (f.type) {
@@ -132,8 +136,25 @@ export const useConclaveStore = create<State>((set) => ({
           return { workspacesById: { ...s.workspacesById, [f.workspace.id]: f.workspace } };
         case "approval":
           return { approvalsById: { ...s.approvalsById, [f.approval.id]: f.approval } };
-        case "terminal-list":
+        case "terminal-list": {
+          const pending = s.pendingTakeover;
+          if (pending) {
+            const prevIds = new Set(s.terminals.map((t) => t.id));
+            const fresh = f.terminals
+              .filter((t) => !prevIds.has(t.id) && t.agentId === pending.agentId)
+              .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+            if (fresh.length > 0) {
+              return {
+                terminals: f.terminals,
+                activeTerminalId: fresh[0]!.id,
+                activeArtifactId: null,
+                activeFsFile: null,
+                pendingTakeover: null,
+              };
+            }
+          }
           return { terminals: f.terminals };
+        }
         case "turn":
           return {};
         default:

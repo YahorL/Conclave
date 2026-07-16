@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import { basename } from "node:path";
-import type { SpawnTerminal, TerminalInfo, TerminalKind } from "@conclave/shared";
+import type { TerminalInfo, TerminalKind } from "@conclave/shared";
 import { childEnv } from "./child-env.js";
 import { RingBuffer } from "./ring-buffer.js";
 import type { GrantStore } from "./grants.js";
@@ -64,23 +64,33 @@ export class TerminalService {
     private readonly opts: TerminalServiceOptions,
   ) {}
 
-  spawn(req: Omit<SpawnTerminal, "machine">): TerminalInfo {
+  spawn(req: { kind: TerminalKind; cwd: string; resumeSessionId?: string; takeover?: boolean; agentId?: string }): TerminalInfo {
     if (!this.grants.terminalsGranted()) throw new TerminalsNotGrantedError();
     const cwd = this.grants.resolveJailed(req.cwd);
     const shell = this.opts.shellBin ?? process.env["SHELL"] ?? "/bin/sh";
     const bin = req.kind === "shell" ? shell : req.kind === "claude" ? this.opts.claudeBin : this.opts.codexBin;
+    const resumeArgs =
+      req.resumeSessionId && req.kind !== "shell"
+        ? req.kind === "claude"
+          ? ["--resume", req.resumeSessionId]
+          : ["resume", req.resumeSessionId]
+        : [];
     const label =
-      req.kind === "shell" ? `${basename(shell)} · you` : `${req.kind} · ${basename(cwd)}`;
+      req.kind === "shell"
+        ? `${basename(shell)} · you`
+        : req.takeover
+          ? `${req.kind} ⇄ ${basename(cwd)}`
+          : `${req.kind} · ${basename(cwd)}`;
     const info: TerminalInfo = {
       id: `term-${randomUUID()}`,
       machine: this.opts.machine,
       kind: req.kind,
       label,
       cwd,
-      agentId: req.kind === "shell" ? undefined : this.opts.resolveAgentId?.(req.kind),
+      agentId: req.kind === "shell" ? undefined : (req.agentId ?? this.opts.resolveAgentId?.(req.kind)),
       startedAt: new Date().toISOString(),
     };
-    const pty = this.ptyMod.spawn(bin, [], {
+    const pty = this.ptyMod.spawn(bin, resumeArgs, {
       name: "xterm-256color",
       cols: 80,
       rows: 24,

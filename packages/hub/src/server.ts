@@ -24,6 +24,7 @@ import {
   NewWorkspaceSchema,
   PushSubscriptionSchema,
   SpawnTerminalSchema,
+  TakeoverTerminalSchema,
   TaskStateSchema,
   TermListFrameSchema,
   UsageReportSchema,
@@ -397,6 +398,16 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     if (!conn) return reply.code(503).send({ error: `machine unreachable: ${parsed.data.machine}` });
     if (!conn.terminals) return reply.code(403).send({ error: `terminals not granted on ${parsed.data.machine}` });
     conn.socket.send(JSON.stringify({ type: "term-spawn", kind: parsed.data.kind, cwd: parsed.data.cwd }));
+    return reply.code(202).send({ ok: true });
+  });
+
+  app.post("/api/terminals/takeover", async (req, reply) => {
+    const parsed = TakeoverTerminalSchema.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid takeover request" });
+    const conn = machines.get(parsed.data.machine);
+    if (!conn) return reply.code(503).send({ error: `machine unreachable: ${parsed.data.machine}` });
+    if (!conn.terminals) return reply.code(403).send({ error: `terminals not granted on ${parsed.data.machine}` });
+    conn.socket.send(JSON.stringify({ type: "term-takeover", agentId: parsed.data.agentId, threadId: parsed.data.threadId }));
     return reply.code(202).send({ ok: true });
   });
 
