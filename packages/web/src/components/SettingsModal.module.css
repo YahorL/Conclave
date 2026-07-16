@@ -1,0 +1,54 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 300px;
+}
+.title {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.label {
+  font-size: 12.5px;
+  color: var(--text-body);
+}
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.seg,
+.segActive {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 4px 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.segActive {
+  background: var(--sel-bg);
+  color: var(--sel-text);
+}

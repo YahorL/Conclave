@@ -1,9 +1,11 @@
-import { MessageCircle, Folder } from "lucide-react";
+import { useState } from "react";
+import { MessageCircle, Folder, Settings } from "lucide-react";
 import { useConclaveStore } from "../store/useConclaveStore.js";
 import { hubClient } from "../lib/hubClient.js";
 import { agentColorVar } from "../lib/agents.js";
 import { Avatar } from "./Avatar.js";
 import { FilesPanel } from "./FilesPanel.js";
+import { SettingsModal } from "./SettingsModal.js";
 import { TerminalsSection } from "./TerminalsSection.js";
 import styles from "./Sidebar.module.css";
 
@@ -34,6 +36,7 @@ export function Sidebar(): JSX.Element {
   const workspacesById = useConclaveStore((s) => s.workspacesById);
   const activeWorkspaceId = useConclaveStore((s) => s.activeWorkspaceId);
   const approvalsById = useConclaveStore((s) => s.approvalsById);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const openThread = async (id: string): Promise<void> => {
     setActiveThread(id);
@@ -70,6 +73,14 @@ export function Sidebar(): JSX.Element {
           onClick={showFiles}
         >
           <Folder size={16} />
+        </button>
+        <button
+          className={`${styles.railBtn} ${styles.railEnd}`}
+          aria-label="settings"
+          data-testid="settings-open"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings size={16} />
         </button>
       </div>
 
@@ -136,6 +147,8 @@ export function Sidebar(): JSX.Element {
       <TerminalsSection />
         </>
       )}
+
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </aside>
   );
 }
