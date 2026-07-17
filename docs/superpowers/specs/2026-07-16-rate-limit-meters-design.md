@@ -93,8 +93,10 @@ registry.yaml → hub route builds limitsByAgent → summary pcts.
 
 ## Error handling
 
-- Malformed/absent `limits` in registry.yaml → Zod default `{}` (no caps, raw
-  counts). Zero/negative cap rejected by `positive()` at registry load.
+- Absent `limits` in registry.yaml → undefined (no caps, raw counts). A
+  malformed value (zero/negative/non-numeric cap) fails `RegistrySchema.parse`
+  at hub boot — fail-loud on misconfig, consistent with every other registry
+  field.
 - Pct can exceed 100 (cap misconfigured low or a window burst) → clamp the BAR
   fill at 100% but show the real number (`137%`) in critical style.
 - No usage rows for an agent → windows are 0 (and 0% when capped).
