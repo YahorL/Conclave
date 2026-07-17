@@ -34,9 +34,12 @@ with per-agent caps configured in the registry. Meters update after every turn.
 ### shared
 
 - `AgentLimitsSchema = z.object({ window5hTokens: z.number().int().positive().optional(), weeklyTokens: z.number().int().positive().optional() })`;
-  `AgentConfigSchema` gains `limits: AgentLimitsSchema.default({})` — DEFAULTED,
-  never required (step-6 lesson: required shared fields break sibling
-  typechecks).
+  `AgentConfigSchema` gains `limits: AgentLimitsSchema.optional()` — plain
+  optional, deliberately NOT `.default({})`: a Zod default makes the field
+  required in the inferred OUTPUT type, which would break every existing
+  AgentConfig/Registry object literal across hub+daemon tests (the step-6.2
+  `acl` fallout). Optional is functionally identical here (absent caps → no
+  percentages).
 - `AgentUsageSchema` gains `window5hTokens: z.number().default(0)`,
   `weeklyTokens: z.number().default(0)` (tokens used in each trailing window)
   and `window5hPct: z.number().optional()`, `weeklyPct: z.number().optional()`
