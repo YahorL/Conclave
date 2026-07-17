@@ -8,7 +8,7 @@ beforeEach(() => {
   s.reset();
   s.setAgents([{ id: "codex", name: "codex", runtime: "codex", machine: "m", workspace: "/w", role: "", allowedTools: [], dangerousActions: [] }]);
   s.setStatuses([{ agent: "codex", status: "running", activity: "reviewing PR", ts: "2026-07-13T10:00:00Z" }]);
-  s.setUsage({ perAgent: [{ agent: "codex", inputTokens: 100, outputTokens: 50, costUsd: 4.82 }], totalCostUsd: 4.82, budgetUsd: 25 });
+  s.setUsage({ perAgent: [{ agent: "codex", inputTokens: 100, outputTokens: 50, costUsd: 4.82, window5hTokens: 0, weeklyTokens: 0 }], totalCostUsd: 4.82, budgetUsd: 25 });
 });
 
 it("shows live activity and workspace spend", () => {

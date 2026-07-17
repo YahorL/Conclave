@@ -107,6 +107,54 @@
   height: 100%;
   background: var(--usage-normal);
 }
+.usageFill[data-severity="nearing"] {
+  background: linear-gradient(90deg, var(--usage-normal), var(--blocked));
+}
+.usageFill[data-severity="critical"] {
+  background: linear-gradient(90deg, var(--blocked), var(--danger));
+}
+.windows {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 14px;
+  padding-top: 2px;
+}
+.window {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary-2);
+}
+.winLabel {
+  color: var(--text-muted);
+}
+.winTrack {
+  flex: 1;
+  height: 5px;
+  background: var(--progress-track);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.winFill {
+  display: block;
+  height: 100%;
+  background: var(--usage-normal);
+}
+.winFill[data-severity="nearing"] {
+  background: linear-gradient(90deg, var(--usage-normal), var(--blocked));
+}
+.winFill[data-severity="critical"] {
+  background: linear-gradient(90deg, var(--blocked), var(--danger));
+}
+.winPct[data-severity="critical"] {
+  color: var(--danger);
+}
+.winText {
+  color: var(--text-secondary-2);
+}
 .footer {
   display: flex;
   justify-content: space-between;
