@@ -73,7 +73,11 @@ values:
 | **new** `--mention-text` | `#f5f5f5` | `#2dd4bf` |
 | **new** `--inline-code-text` | `#e5e5e5` | `#5eead4` |
 | **new** `--file-link` | `currentColor` | `#2dd4bf` |
-| **new** `--badge-text` | `#d4d4d4` | `#93a5a1` |
+| **new** `--badge-text` | `#d4d4d4` | `#5eead4` (corrected — handoff is explicit: `plan` badge `#5eead4` text; `#93a5a1` was a transcription error) |
+| **new** `--badge-border` | `#333333` | `#1e4a44` (handoff: `plan` badge `#1e4a44` border) |
+| **new** `--human-avatar-bg` | `#f5f5f5` | `#124e46` (handoff mock: teal human avatar) |
+| **new** `--human-avatar-text` | `#0a0a0a` | `#5eead4` |
+| **new** `--progress-track` | `#1f1f1f` | `#1c2624` (handoff: progress bars on `#1c2624` track) |
 
 Values marked "interpolated" are not in the handoff (it is silent on those
 tokens for Teal); they are teal-tinted picks consistent with its palette and may
@@ -152,6 +156,11 @@ be tuned against `screenshots/3a-teal-main.png` during review.
 - PWA manifest colors + icon stay Black-branded (static files).
 - The `--artifact-ticket` and interpolated tokens are best-guess Teal values
   pending visual review.
+- Teal mentions/inline code keep their Black padding: with a transparent bg the
+  padding leaves slight phantom width vs the mock's plain text — accepted
+  simplification.
+- The sidebar terminal runningDot uses a muted token rather than `--live`
+  (pre-existing from 7.1, filed as follow-up).
 
 ## Out of scope
 

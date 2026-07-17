@@ -1,3 +1,25 @@
+/* Shared across all themes: agent identity, status signals, fonts (handoff:
+   "Agent identity colors, status colors and usage-bar severity gradients are
+   shared across both themes"). Everything else is per-theme below. */
+:root {
+  --live: #2dd4bf;
+  --blocked: #facc15;
+  --warn: #f2a65a;
+  --danger: #f87171;
+
+  --agent-claude-code: #e8a06a;
+  --agent-claude-code-text: #1a0f06;
+  --agent-codex: #7dd3fc;
+  --agent-codex-text: #06121a;
+  --agent-reviewer: #c4b5fd;
+  --agent-reviewer-text: #120a1f;
+  --agent-default: #8a8a8a;
+  --agent-default-text: #0a0a0a;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
 :root[data-theme="black"] {
   --chrome: #000000;
   --surface: #0d0d0d;
@@ -19,27 +41,63 @@
   --code-bg: #000000;
   --inline-code-bg: #171717;
 
-  --live: #2dd4bf;
-  --blocked: #facc15;
-  --warn: #f2a65a;
-  --danger: #f87171;
   --usage-normal: #d4d4d4;
 
   --sel-bg: #f5f5f5;
   --sel-text: #0a0a0a;
+  --accent: #f5f5f5;
 
-  --agent-claude-code: #e8a06a;
-  --agent-claude-code-text: #1a0f06;
-  --agent-codex: #7dd3fc;
-  --agent-codex-text: #06121a;
-  --agent-reviewer: #c4b5fd;
-  --agent-reviewer-text: #120a1f;
-  --agent-default: #8a8a8a;
-  --agent-default-text: #0a0a0a;
+  --mention-bg: #1f1f1f;
+  --mention-text: #f5f5f5;
+  --inline-code-text: #e5e5e5;
+  --file-link: currentColor;
+  --badge-text: #d4d4d4;
+  --badge-border: #333333;
+  --human-avatar-bg: #f5f5f5;
+  --human-avatar-text: #0a0a0a;
+  --progress-track: #1f1f1f;
 
   --artifact-plan: #f28b82;
   --artifact-ticket: #fbbf24;
+}
 
-  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+:root[data-theme="teal"] {
+  --chrome: #0e1312;
+  --surface: #131918;
+  --rail: #101615;
+  --card: #0f1514;
+  --border-strong: #2a3a37;
+  --border: #243230;
+  --border-2: #243230;
+  --hairline: #1c2624;
+  --hover: #18211f;
+  --chip: #1c2624;
+
+  --text-primary: #e6edeb;
+  --text-body: #c9d4d1;
+  --text-secondary: #93a5a1;
+  --text-secondary-2: #7c8c88;
+  --text-muted: #5f6f6c;
+  --text-code: #8fb5ac;
+  --code-bg: #0e1312;
+  --inline-code-bg: transparent;
+
+  --usage-normal: #2dd4bf;
+
+  --sel-bg: #124e46;
+  --sel-text: #eafffb;
+  --accent: #2dd4bf;
+
+  --mention-bg: transparent;
+  --mention-text: #2dd4bf;
+  --inline-code-text: #5eead4;
+  --file-link: #2dd4bf;
+  --badge-text: #5eead4;
+  --badge-border: #1e4a44;
+  --human-avatar-bg: #124e46;
+  --human-avatar-text: #5eead4;
+  --progress-track: #1c2624;
+
+  --artifact-plan: #5eead4;
+  --artifact-ticket: #5eead4;
 }

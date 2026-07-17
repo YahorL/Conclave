@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { AgentConfig, AgentStatus, Approval, Artifact, FsEntry, Message, Task, TerminalInfo, Thread, UsageSummary, Workspace } from "@conclave/shared";
 import type { MachineInfo } from "../lib/hubClient.js";
 import type { WsFrame } from "../lib/socket.js";
+import { applyTheme, readStoredTheme, type Theme } from "../lib/theme.js";
 
 interface State {
   threads: Thread[];
@@ -25,6 +26,7 @@ interface State {
   terminals: TerminalInfo[];
   activeTerminalId: string | null;
   pendingTakeover: { agentId: string } | null;
+  theme: Theme;
   setThreads(t: Thread[]): void;
   setMessages(threadId: string, m: Message[]): void;
   setAgents(a: AgentConfig[]): void;
@@ -43,6 +45,7 @@ interface State {
   setTerminals(t: TerminalInfo[]): void;
   setActiveTerminal(id: string | null): void;
   setPendingTakeover(v: { agentId: string } | null): void;
+  setTheme(t: Theme): void;
   applyFrame(f: WsFrame): void;
   reset(): void;
 }
@@ -74,6 +77,7 @@ const initial = {
   terminals: [] as TerminalInfo[],
   activeTerminalId: null as string | null,
   pendingTakeover: null as { agentId: string } | null,
+  theme: readStoredTheme() as Theme,
 };
 
 export const useConclaveStore = create<State>((set) => ({
@@ -110,6 +114,10 @@ export const useConclaveStore = create<State>((set) => ({
   setActiveTerminal: (id) =>
     set(id ? { activeTerminalId: id, activeArtifactId: null, activeFsFile: null } : { activeTerminalId: id }),
   setPendingTakeover: (v) => set({ pendingTakeover: v }),
+  setTheme: (t) => {
+    applyTheme(t);
+    set({ theme: t });
+  },
   applyFrame: (f) =>
     set((s) => {
       switch (f.type) {

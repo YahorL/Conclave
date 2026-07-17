@@ -60,14 +60,14 @@
 }
 .progressTrack {
   height: 3px;
-  background: var(--border);
+  background: var(--progress-track);
   border-radius: 2px;
   overflow: hidden;
 }
 .progressRunning {
   height: 100%;
   width: 40%;
-  background: var(--sel-bg);
+  background: var(--accent);
   border-radius: 2px;
   animation: indeterminate 1.6s ease-in-out infinite;
 }
@@ -99,7 +99,7 @@
 .usageTrack {
   grid-column: 1 / -1;
   height: 5px;
-  background: var(--border);
+  background: var(--progress-track);
   border-radius: 3px;
   overflow: hidden;
 }

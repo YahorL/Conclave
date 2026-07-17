@@ -9,6 +9,14 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="theme-color" content="#0d0d0d" />
     <script>
+      // Apply the persisted theme before first paint (default stays the
+      // data-theme="black" attribute above for no-JS / first visit).
+      try {
+        var t = localStorage.getItem("conclave-theme");
+        if (t === "teal" || t === "black") document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <script>
       // The value is replaced at serve time by the hub with the runtime CONCLAVE_TOKEN.
       window.__CONCLAVE_TOKEN__ = "CONCLAVE_TOKEN_PLACEHOLDER";
     </script>
