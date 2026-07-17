@@ -55,12 +55,21 @@ agents:
     machine: my-laptop        # must match a daemon's CONCLAVE_MACHINE
     workspace: /home/me/proj
     role: implementer
+    limits:              # optional: enables the 5h/weekly rate-limit meters
+      window5hTokens: 2000000
+      weeklyTokens: 20000000
   - id: codex
     name: codex
     runtime: codex
     machine: my-laptop
     workspace: /home/me/proj
 ```
+
+> **Rate-limit meters:** `limits` drives the 5h/weekly window meters in the
+> status strip. The percentages are estimates against caps *you* configure —
+> subscriptions don't expose their quotas — and they count only usage Conclave
+> observed (turns run directly in a CLI outside Conclave don't appear). The
+> weekly meter is a trailing 7-day window, not calendar-anchored.
 
 ## 3. Run a daemon on each machine
 

@@ -1,4 +1,4 @@
-import type { AgentStatus, Approval, Artifact, Message, Task, TerminalInfo, Thread, TurnRequest, Workspace } from "@conclave/shared";
+import type { AgentStatus, Approval, Artifact, Message, Task, TerminalInfo, Thread, TurnRequest, UsageSummary, Workspace } from "@conclave/shared";
 import { config } from "./config.js";
 
 export type WsFrame =
@@ -10,6 +10,7 @@ export type WsFrame =
   | { type: "artifact"; artifact: Artifact }
   | { type: "workspace"; workspace: Workspace }
   | { type: "approval"; approval: Approval }
+  | { type: "usage"; summary: UsageSummary }
   | { type: "terminal-list"; terminals: TerminalInfo[] };
 
 export type TermStreamFrame = {

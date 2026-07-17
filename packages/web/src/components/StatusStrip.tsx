@@ -3,11 +3,37 @@ import { Bell, BellOff } from "lucide-react";
 import { useConclaveStore } from "../store/useConclaveStore.js";
 import { agentColorVar } from "../lib/agents.js";
 import { disablePush, enablePush, isPushEnabled, pushPermission, pushSupported } from "../lib/push.js";
+import { fmtTok, usageSeverity } from "../lib/severity.js";
 import styles from "./StatusStrip.module.css";
 
 function hhmm(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function WindowMeter({ label, agent, used, pct }: {
+  label: string; agent: string; used: number; pct?: number;
+}): JSX.Element {
+  const key = label === "5h" ? "5h" : "wk";
+  return (
+    <span className={styles.window} data-testid={`win-${key}-${agent}`}>
+      <span className={styles.winLabel}>{label}</span>
+      {pct === undefined ? (
+        <span className={styles.winText}>{fmtTok(used)} tok</span>
+      ) : (
+        <>
+          <span className={styles.winTrack}>
+            <span
+              className={styles.winFill}
+              data-severity={usageSeverity(pct)}
+              style={{ width: `${Math.min(100, pct)}%` }}
+            />
+          </span>
+          <span className={styles.winPct} data-severity={usageSeverity(pct)}>{pct}%</span>
+        </>
+      )}
+    </span>
+  );
 }
 
 export function StatusStrip(): JSX.Element {
@@ -61,7 +87,7 @@ export function StatusStrip(): JSX.Element {
       <div className={styles.sectionHeader}>usage limits</div>
       {(usage?.perAgent ?? []).map((u) => {
         const st = statusByAgent[u.agent];
-        const pct = budget > 0 ? Math.min(100, Math.round((u.costUsd / budget) * 100)) : 0;
+        const pct = budget > 0 ? Math.round((u.costUsd / budget) * 100) : 0;
         return (
           <div key={u.agent} className={styles.usageRow}>
             <span className={styles.swatch} style={{ background: agentColorVar(u.agent).bg }} />
@@ -71,7 +97,15 @@ export function StatusStrip(): JSX.Element {
               {st?.status === "blocked" && st.resetsAt ? ` · resets ${hhmm(st.resetsAt)}` : ""}
             </span>
             <div className={styles.usageTrack}>
-              <div className={styles.usageFill} style={{ width: `${pct}%` }} />
+              <div
+                className={styles.usageFill}
+                data-severity={usageSeverity(pct)}
+                style={{ width: `${Math.min(100, pct)}%` }}
+              />
+            </div>
+            <div className={styles.windows}>
+              <WindowMeter label="5h" agent={u.agent} used={u.window5hTokens} pct={u.window5hPct} />
+              <WindowMeter label="wk" agent={u.agent} used={u.weeklyTokens} pct={u.weeklyPct} />
             </div>
           </div>
         );

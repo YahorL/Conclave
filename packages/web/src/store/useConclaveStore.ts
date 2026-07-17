@@ -144,6 +144,8 @@ export const useConclaveStore = create<State>((set) => ({
           return { workspacesById: { ...s.workspacesById, [f.workspace.id]: f.workspace } };
         case "approval":
           return { approvalsById: { ...s.approvalsById, [f.approval.id]: f.approval } };
+        case "usage":
+          return { usage: f.summary };
         case "terminal-list": {
           const pending = s.pendingTakeover;
           if (pending) {
