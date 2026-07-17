@@ -19,6 +19,10 @@ export const AgentUsageSchema = z.object({
   inputTokens: z.number().int().nonnegative(),
   outputTokens: z.number().int().nonnegative(),
   costUsd: z.number().nonnegative(),
+  window5hTokens: z.number().nonnegative().default(0),
+  weeklyTokens: z.number().nonnegative().default(0),
+  window5hPct: z.number().optional(),
+  weeklyPct: z.number().optional(),
 });
 
 export const UsageSummarySchema = z.object({

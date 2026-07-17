@@ -54,6 +54,8 @@ export function getUsageSummary(db: Database.Database, budgetUsd: number): Usage
     inputTokens: r.input_tokens ?? 0,
     outputTokens: r.output_tokens ?? 0,
     costUsd: r.cost_usd ?? 0,
+    window5hTokens: 0,
+    weeklyTokens: 0,
   }));
   const totalCostUsd = perAgent.reduce((sum, a) => sum + a.costUsd, 0);
   return { perAgent, totalCostUsd, budgetUsd };
