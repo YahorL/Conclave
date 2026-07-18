@@ -2,6 +2,7 @@ import type { Message } from "@conclave/shared";
 import { useConclaveStore } from "../store/useConclaveStore.js";
 import { agentColorVar } from "../lib/agents.js";
 import { parseMessageBody, type Block, type InlineSeg } from "../lib/parseMessage.js";
+import { resolveFileLink } from "../lib/fileLink.js";
 import { Avatar } from "./Avatar.js";
 import { ApprovalCard } from "./ApprovalCard.js";
 import styles from "./ChatMessage.module.css";
@@ -13,6 +14,18 @@ function hhmm(ts: string): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+function openFileLink(raw: string): void {
+  const s = useConclaveStore.getState();
+  const target = resolveFileLink(raw, {
+    activeWorkspace: s.activeWorkspaceId ? s.workspacesById[s.activeWorkspaceId] : undefined,
+    selectedMachine: s.selectedMachine,
+    machines: s.machines,
+  });
+  if (!target) return;
+  if (s.fsDirty && !window.confirm("discard unsaved changes?")) return;
+  s.setActiveFsFile(target);
+}
+
 function Inline({ seg }: { seg: InlineSeg }): JSX.Element {
   switch (seg.kind) {
     case "mention":
@@ -21,7 +34,14 @@ function Inline({ seg }: { seg: InlineSeg }): JSX.Element {
       return <code className={styles.inlineCode}>{seg.text}</code>;
     case "file":
       return (
-        <a className={styles.file} href="#" onClick={(e) => e.preventDefault()}>
+        <a
+          className={styles.file}
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            openFileLink(seg.path);
+          }}
+        >
           {seg.path}
         </a>
       );

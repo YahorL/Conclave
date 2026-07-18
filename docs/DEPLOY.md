@@ -71,6 +71,11 @@ agents:
 > observed (turns run directly in a CLI outside Conclave don't appear). The
 > weekly meter is a trailing 7-day window, not calendar-anchored.
 
+> **Editing files:** the web file viewer is an editor — saves write through the
+> daemon (jailed to granted roots) and are logged as an `edited <path>` status
+> message in the active thread. Unsaved edits are discarded when you navigate
+> away (the file tree and chat links warn; other navigation doesn't).
+
 ## 3. Run a daemon on each machine
 
 On every machine named in the registry (needs Node 22+ and the agent CLIs

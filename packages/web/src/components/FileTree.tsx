@@ -17,7 +17,14 @@ function Node({ machine, path, name, kind }: { machine: string; path: string; na
 
   if (kind === "file") {
     return (
-      <button className={styles.file} onClick={() => setActiveFsFile({ machine, path })}>
+      <button
+        className={styles.file}
+        onClick={() => {
+          const s = useConclaveStore.getState();
+          if (s.fsDirty && !window.confirm("discard unsaved changes?")) return;
+          setActiveFsFile({ machine, path });
+        }}
+      >
         {name}
       </button>
     );
