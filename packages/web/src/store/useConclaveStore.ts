@@ -4,6 +4,8 @@ import type { MachineInfo } from "../lib/hubClient.js";
 import type { WsFrame } from "../lib/socket.js";
 import { applyTheme, readStoredTheme, type Theme } from "../lib/theme.js";
 
+export type MobileTab = "workspace" | "chats" | "terminals" | "status";
+
 interface State {
   threads: Thread[];
   messagesByThread: Record<string, Message[]>;
@@ -28,6 +30,8 @@ interface State {
   activeTerminalId: string | null;
   pendingTakeover: { agentId: string } | null;
   theme: Theme;
+  mobileTab: MobileTab;
+  chatListOpen: boolean;
   setThreads(t: Thread[]): void;
   setMessages(threadId: string, m: Message[]): void;
   setAgents(a: AgentConfig[]): void;
@@ -48,6 +52,8 @@ interface State {
   setActiveTerminal(id: string | null): void;
   setPendingTakeover(v: { agentId: string } | null): void;
   setTheme(t: Theme): void;
+  setMobileTab(tab: MobileTab): void;
+  setChatListOpen(v: boolean): void;
   applyFrame(f: WsFrame): void;
   reset(): void;
 }
@@ -81,6 +87,8 @@ const initial = {
   activeTerminalId: null as string | null,
   pendingTakeover: null as { agentId: string } | null,
   theme: readStoredTheme() as Theme,
+  mobileTab: "workspace" as MobileTab,
+  chatListOpen: false,
 };
 
 export const useConclaveStore = create<State>((set) => ({
@@ -99,9 +107,16 @@ export const useConclaveStore = create<State>((set) => ({
       activeFsFile: null,
       fsDirty: false,
       activeTerminalId: null,
+      mobileTab: "chats",
+      chatListOpen: false,
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
     })),
-  setActiveArtifact: (id) => set({ activeArtifactId: id, activeFsFile: null, fsDirty: false, activeTerminalId: null }),
+  setActiveArtifact: (id) =>
+    set(
+      id
+        ? { activeArtifactId: id, activeFsFile: null, fsDirty: false, activeTerminalId: null, mobileTab: "chats" }
+        : { activeArtifactId: id, activeFsFile: null, fsDirty: false, activeTerminalId: null },
+    ),
   openThread: (id) =>
     set((s) => ({
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
@@ -111,18 +126,29 @@ export const useConclaveStore = create<State>((set) => ({
   setSelectedMachine: (id) => set({ selectedMachine: id }),
   setFsChildren: (key, entries) =>
     set((s) => ({ fsChildren: { ...s.fsChildren, [key]: entries } })),
-  setActiveFsFile: (f) => set({ activeFsFile: f, activeArtifactId: null, activeTerminalId: null }),
+  setActiveFsFile: (f) =>
+    set(
+      f
+        ? { activeFsFile: f, activeArtifactId: null, activeTerminalId: null, mobileTab: "chats" }
+        : { activeFsFile: f, activeArtifactId: null, activeTerminalId: null, fsDirty: false },
+    ),
   setFsDirty: (v) => set({ fsDirty: v }),
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
   setApprovals: (list) => set({ approvalsById: Object.fromEntries(list.map((a) => [a.id, a])) }),
   setTerminals: (t) => set({ terminals: t }),
   setActiveTerminal: (id) =>
-    set(id ? { activeTerminalId: id, activeArtifactId: null, activeFsFile: null, fsDirty: false } : { activeTerminalId: id }),
+    set(
+      id
+        ? { activeTerminalId: id, activeArtifactId: null, activeFsFile: null, fsDirty: false, mobileTab: "terminals" }
+        : { activeTerminalId: id },
+    ),
   setPendingTakeover: (v) => set({ pendingTakeover: v }),
   setTheme: (t) => {
     applyTheme(t);
     set({ theme: t });
   },
+  setMobileTab: (tab) => set({ mobileTab: tab }),
+  setChatListOpen: (v) => set({ chatListOpen: v }),
   applyFrame: (f) =>
     set((s) => {
       switch (f.type) {
@@ -165,6 +191,7 @@ export const useConclaveStore = create<State>((set) => ({
                 activeArtifactId: null,
                 activeFsFile: null,
                 fsDirty: false,
+                mobileTab: "terminals",
                 pendingTakeover: null,
               };
             }

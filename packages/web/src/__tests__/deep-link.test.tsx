@@ -52,4 +52,14 @@ describe("deep link ?thread=", () => {
       expect(useConclaveStore.getState().activeThreadId).toBe("th1"),
     );
   });
+
+  it("hydrate auto-select does not steer the mobile tab off workspace", async () => {
+    close = startSync();
+    await vi.waitFor(() =>
+      expect(useConclaveStore.getState().activeThreadId).toBe("th1"),
+    );
+    expect(useConclaveStore.getState().mobileTab).toBe("workspace");
+    expect(useConclaveStore.getState().chatListOpen).toBe(false);
+    expect(useConclaveStore.getState().openThreadIds).toContain("th1");
+  });
 });

@@ -186,3 +186,23 @@ starts a fresh interactive session in the workspace instead.
 Manual smoke (automated tests cover the resume ARGS and plumbing, not that the
 CLI actually restores the conversation): run a headless turn for an agent in a
 thread, then ⇄ take over → confirm the resumed TUI shows the prior context.
+
+## Mobile layout
+
+Below 768px the web app renders a bottom-tab mobile shell (Workspace · Chats ·
+Terminals · Status) instead of the desktop three-column layout — same hub URL, no
+extra setup; add it to the home screen via the existing PWA manifest. Notes:
+
+- The Chats tab badge counts threads with pending approvals (Conclave has no
+  read/unread tracking).
+- Terminal take-over is desktop-only for now: its entry point (the context
+  toolbar's ⇄ button) is not rendered on mobile. Agent terminals opened from the
+  Terminals tab are still fully interactive.
+- Epic Mode / Fork (context toolbar) are likewise desktop-only.
+- Navigating away from an unsaved editor via the tab bar discards edits silently
+  (same documented limitation as desktop navigation); the in-editor back button
+  asks for confirmation.
+
+Manual smoke on a real phone/browser (four tabs, chat/terminal/editor flows,
+rotation across 768px, safe areas, Teal) has NOT been run — no browser in the
+build sandbox.
