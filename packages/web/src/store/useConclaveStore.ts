@@ -19,7 +19,8 @@ interface State {
   machines: MachineInfo[];
   selectedMachine: string | null;
   fsChildren: Record<string, FsEntry[]>;
-  activeFsFile: { machine: string; path: string } | null;
+  activeFsFile: { machine: string; path: string; line?: number } | null;
+  fsDirty: boolean;
   workspacesById: Record<string, Workspace>;
   activeWorkspaceId: string | null;
   approvalsById: Record<string, Approval>;
@@ -39,7 +40,8 @@ interface State {
   setMachines(m: MachineInfo[]): void;
   setSelectedMachine(id: string | null): void;
   setFsChildren(key: string, entries: FsEntry[]): void;
-  setActiveFsFile(f: { machine: string; path: string } | null): void;
+  setActiveFsFile(f: { machine: string; path: string; line?: number } | null): void;
+  setFsDirty(v: boolean): void;
   setActiveWorkspace(id: string | null): void;
   setApprovals(a: Approval[]): void;
   setTerminals(t: TerminalInfo[]): void;
@@ -70,7 +72,8 @@ const initial = {
   machines: [] as MachineInfo[],
   selectedMachine: null as string | null,
   fsChildren: {} as Record<string, FsEntry[]>,
-  activeFsFile: null as { machine: string; path: string } | null,
+  activeFsFile: null as { machine: string; path: string; line?: number } | null,
+  fsDirty: false,
   workspacesById: {} as Record<string, Workspace>,
   activeWorkspaceId: null as string | null,
   approvalsById: {} as Record<string, Approval>,
@@ -94,10 +97,11 @@ export const useConclaveStore = create<State>((set) => ({
       activeThreadId: id,
       activeArtifactId: null,
       activeFsFile: null,
+      fsDirty: false,
       activeTerminalId: null,
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
     })),
-  setActiveArtifact: (id) => set({ activeArtifactId: id, activeFsFile: null, activeTerminalId: null }),
+  setActiveArtifact: (id) => set({ activeArtifactId: id, activeFsFile: null, fsDirty: false, activeTerminalId: null }),
   openThread: (id) =>
     set((s) => ({
       openThreadIds: s.openThreadIds.includes(id) ? s.openThreadIds : [...s.openThreadIds, id],
@@ -108,11 +112,12 @@ export const useConclaveStore = create<State>((set) => ({
   setFsChildren: (key, entries) =>
     set((s) => ({ fsChildren: { ...s.fsChildren, [key]: entries } })),
   setActiveFsFile: (f) => set({ activeFsFile: f, activeArtifactId: null, activeTerminalId: null }),
+  setFsDirty: (v) => set({ fsDirty: v }),
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
   setApprovals: (list) => set({ approvalsById: Object.fromEntries(list.map((a) => [a.id, a])) }),
   setTerminals: (t) => set({ terminals: t }),
   setActiveTerminal: (id) =>
-    set(id ? { activeTerminalId: id, activeArtifactId: null, activeFsFile: null } : { activeTerminalId: id }),
+    set(id ? { activeTerminalId: id, activeArtifactId: null, activeFsFile: null, fsDirty: false } : { activeTerminalId: id }),
   setPendingTakeover: (v) => set({ pendingTakeover: v }),
   setTheme: (t) => {
     applyTheme(t);
@@ -159,6 +164,7 @@ export const useConclaveStore = create<State>((set) => ({
                 activeTerminalId: fresh[0]!.id,
                 activeArtifactId: null,
                 activeFsFile: null,
+                fsDirty: false,
                 pendingTakeover: null,
               };
             }

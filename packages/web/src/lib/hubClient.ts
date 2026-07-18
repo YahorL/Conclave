@@ -40,6 +40,8 @@ export const hubClient = {
     req<FsEntry[]>("POST", `/api/fs/${machine}/list`, { path }),
   fsRead: (machine: string, path: string) =>
     req<{ content: string }>("POST", `/api/fs/${machine}/read`, { path }),
+  fsWrite: (machine: string, path: string, content: string, threadId?: string) =>
+    req<{ ok?: boolean }>("POST", `/api/fs/${machine}/write`, { path, content, threadId }),
   createWorkspace: (input: NewWorkspace) => req<Workspace>("POST", "/api/workspaces", input),
   listWorkspaces: () => req<Workspace[]>("GET", "/api/workspaces"),
   listApprovals: () => req<Approval[]>("GET", "/api/approvals"),
