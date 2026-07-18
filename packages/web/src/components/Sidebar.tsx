@@ -3,22 +3,12 @@ import { MessageCircle, Folder, Settings } from "lucide-react";
 import { useConclaveStore } from "../store/useConclaveStore.js";
 import { hubClient } from "../lib/hubClient.js";
 import { agentColorVar } from "../lib/agents.js";
+import { artifactColor, threadLabel } from "../lib/labels.js";
 import { Avatar } from "./Avatar.js";
 import { FilesPanel } from "./FilesPanel.js";
 import { SettingsModal } from "./SettingsModal.js";
 import { TerminalsSection } from "./TerminalsSection.js";
 import styles from "./Sidebar.module.css";
-
-function threadLabel(workspace: string | null, kind: string): string {
-  if (workspace) return workspace;
-  return kind === "dm" ? "direct message" : "thread";
-}
-
-function artifactColor(name: string): string {
-  if (/ticket/i.test(name)) return "var(--artifact-ticket)";
-  if (/plan/i.test(name)) return "var(--artifact-plan)";
-  return "var(--text-secondary-2)";
-}
 
 export function Sidebar(): JSX.Element {
   const threads = useConclaveStore((s) => s.threads);

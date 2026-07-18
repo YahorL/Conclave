@@ -126,3 +126,41 @@
 .termWrap button {
   min-height: 44px;
 }
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wsSelect {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.gearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.agentStatus {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.agentStatus[data-status="running"] {
+  color: var(--live);
+}
+.agentStatus[data-status="blocked"] {
+  color: var(--blocked);
+}
+.agentStatus[data-status="idle"] {
+  color: var(--text-muted);
+}
