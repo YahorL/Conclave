@@ -42,23 +42,25 @@ const vapid = loadOrCreateVapid(dataDir);
 // web-push requires a contact; no real address is needed for a self-hosted subscriber.
 webpush.setVapidDetails("mailto:conclave@localhost", vapid.publicKey, vapid.privateKey);
 const push = new PushStore(db);
-new Notifier({
-  mailboxEvents: mailbox.events,
-  statusEvents: status.events,
-  store: push,
-  send: async (sub, payload) => {
-    await webpush.sendNotification(
-      { endpoint: sub.endpoint, keys: sub.keys },
-      JSON.stringify(payload),
-    );
-  },
-}).start();
 const budgetUsd = Number(process.env["CONCLAVE_BUDGET_USD"] ?? 25);
 const webDir = process.env["CONCLAVE_WEB_DIR"];
 const app = await buildServer({
   mailbox, token, registry, db, orchestrator, status, budgetUsd, tasks, artifacts, workspaces, approvals, webDir,
   push, vapidPublicKey: vapid.publicKey,
 });
+const notifier = new Notifier({
+  mailboxEvents: mailbox.events,
+  statusEvents: status.events,
+  store: push,
+  broadcast: (payload) => app.broadcastNotify(payload),
+  send: async (sub, payload) => {
+    await webpush.sendNotification(
+      { endpoint: sub.endpoint, keys: sub.keys },
+      JSON.stringify(payload),
+    );
+  },
+});
+notifier.start();
 await app.listen({ port, host: "0.0.0.0" });
 console.log(`conclave hub: ${registry.agents.length} agent(s) registered`);
 if (webDir && existsSync(join(webDir, "index.html"))) console.log(`conclave hub: serving web app from ${webDir}`);

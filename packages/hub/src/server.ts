@@ -46,6 +46,7 @@ import { assertAclAllowed } from "./acl.js";
 import { MachineRegistry, PendingRequests } from "./fs-tunnel.js";
 import { TerminalRegistry } from "./terminal-registry.js";
 import type { PushStore } from "./push-store.js";
+import type { NotifyPayload } from "./notifier.js";
 
 export interface ServerOptions {
   mailbox: Mailbox;
@@ -71,7 +72,9 @@ const VerdictBodySchema = z.object({
 
 const IdParamsSchema = z.object({ id: z.string().min(1) });
 
-export async function buildServer(opts: ServerOptions): Promise<FastifyInstance> {
+export type HubApp = FastifyInstance & { broadcastNotify(payload: NotifyPayload): void };
+
+export async function buildServer(opts: ServerOptions): Promise<HubApp> {
   const { mailbox, token, registry: registryOpt } = opts;
   const registry: Registry = registryOpt ?? { agents: [], acl: [] };
   const machines = new MachineRegistry();
@@ -81,6 +84,10 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
   const broadcastTerminalList = (): void => {
     const payload = JSON.stringify({ type: "terminal-list", terminals: terminals.list() });
     for (const s of wsSockets) s.send(payload);
+  };
+  const broadcastNotify = (payload: NotifyPayload): void => {
+    const raw = JSON.stringify({ type: "notify", payload });
+    for (const s of wsSockets) s.send(raw);
   };
   const limitsByAgent = (): Record<string, import("@conclave/shared").AgentLimits> =>
     Object.fromEntries((opts.registry?.agents ?? []).map((a) => [a.id, a.limits ?? {}]));
@@ -585,7 +592,9 @@ export async function buildServer(opts: ServerOptions): Promise<FastifyInstance>
     console.warn(`conclave hub: CONCLAVE_WEB_DIR is set but ${join(opts.webDir, "index.html")} does not exist — web app NOT served`);
   }
 
-  return app;
+  const hubApp = app as unknown as HubApp;
+  hubApp.broadcastNotify = broadcastNotify;
+  return hubApp;
 }
 
 function parseOr400<T>(
