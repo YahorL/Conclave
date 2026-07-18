@@ -202,3 +202,7 @@ extra setup; add it to the home screen via the existing PWA manifest. Notes:
 - Navigating away from an unsaved editor via the tab bar discards edits silently
   (same documented limitation as desktop navigation); the in-editor back button
   asks for confirmation.
+
+Manual smoke on a real phone/browser (four tabs, chat/terminal/editor flows,
+rotation across 768px, safe areas, Teal) has NOT been run — no browser in the
+build sandbox.

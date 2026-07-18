@@ -42,6 +42,9 @@ export function WorkspaceScreen(): JSX.Element {
               value={activeWorkspaceId ?? ""}
               onChange={(e) => setActiveWorkspace(e.target.value)}
             >
+              <option value="" disabled>
+                choose workspace
+              </option>
               {workspaces.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}

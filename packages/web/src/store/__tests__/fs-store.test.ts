@@ -35,6 +35,13 @@ describe("fs editor store state", () => {
     expect(useConclaveStore.getState().fsDirty).toBe(false);
   });
 
+  it("setActiveFsFile(null) clears fsDirty", () => {
+    useConclaveStore.getState().setActiveFsFile({ machine: "m1", path: "/w/a.ts" });
+    useConclaveStore.getState().setFsDirty(true);
+    useConclaveStore.getState().setActiveFsFile(null);
+    expect(useConclaveStore.getState().fsDirty).toBe(false);
+  });
+
   it("setActiveTerminal(null) does not touch fsDirty", () => {
     useConclaveStore.getState().setFsDirty(true);
     useConclaveStore.getState().setActiveTerminal(null);

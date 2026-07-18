@@ -30,8 +30,18 @@ export function startSync(): () => void {
       store.setActiveThread(deepLink);
       store.setMessages(deepLink, await hubClient.listMessages(deepLink));
     } else if (!useConclaveStore.getState().activeThreadId && threads.length > 0) {
-      store.setActiveThread(threads[0].id);
-      store.setMessages(threads[0].id, await hubClient.listMessages(threads[0].id));
+      // Auto-select without setActiveThread: hydrate must not steer the mobile
+      // shell off the Workspace home tab (setActiveThread forces mobileTab "chats").
+      const first = threads[0].id;
+      useConclaveStore.setState((s) => ({
+        activeThreadId: first,
+        activeArtifactId: null,
+        activeFsFile: null,
+        fsDirty: false,
+        activeTerminalId: null,
+        openThreadIds: s.openThreadIds.includes(first) ? s.openThreadIds : [...s.openThreadIds, first],
+      }));
+      store.setMessages(first, await hubClient.listMessages(first));
     }
   };
 

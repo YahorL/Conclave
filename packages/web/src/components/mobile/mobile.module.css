@@ -138,6 +138,7 @@
   background: transparent;
   border: none;
   padding: 0;
+  min-height: 44px;
 }
 .gearBtn {
   display: flex;

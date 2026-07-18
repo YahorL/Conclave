@@ -130,7 +130,7 @@ export const useConclaveStore = create<State>((set) => ({
     set(
       f
         ? { activeFsFile: f, activeArtifactId: null, activeTerminalId: null, mobileTab: "chats" }
-        : { activeFsFile: f, activeArtifactId: null, activeTerminalId: null },
+        : { activeFsFile: f, activeArtifactId: null, activeTerminalId: null, fsDirty: false },
     ),
   setFsDirty: (v) => set({ fsDirty: v }),
   setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),
