@@ -45,7 +45,7 @@ export function FsFileView({ onViewReady }: { onViewReady?: (v: EditorView) => v
 
   const save = async (): Promise<void> => {
     const view = viewRef.current;
-    if (!view || !file || saving) return;
+    if (!view || !file || saving || !dirty) return;
     setSaving(true);
     setNotice(null);
     try {

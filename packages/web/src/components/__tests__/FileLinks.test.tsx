@@ -31,6 +31,14 @@ describe("chat file links", () => {
     });
   });
 
+  it("an absolute path is used as-is (not joined onto the workspace folder)", async () => {
+    render(<ChatMessage message={msg("see /home/me/proj/src/idem.ts:41")} />);
+    await userEvent.click(screen.getByText("/home/me/proj/src/idem.ts:41"));
+    expect(useConclaveStore.getState().activeFsFile).toEqual({
+      machine: "m1", path: "/home/me/proj/src/idem.ts", line: 41,
+    });
+  });
+
   it("an unresolvable link stays inert", async () => {
     useConclaveStore.getState().reset(); // no workspace, no machines
     render(<ChatMessage message={msg("see src/idem.ts:41")} />);

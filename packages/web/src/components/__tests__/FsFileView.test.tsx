@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { EditorView } from "codemirror";
 import { useConclaveStore } from "../../store/useConclaveStore.js";
@@ -44,6 +44,15 @@ describe("FsFileView editor", () => {
     expect(view.state.doc.toString()).toBe("hello world");
     expect(screen.queryByTestId("fs-dirty")).toBeNull();
     expect((screen.getByTestId("fs-save") as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("Mod-s on a clean buffer does not write", async () => {
+    openFile();
+    await renderWithView();
+    const content = document.querySelector(".cm-content")!;
+    fireEvent.keyDown(content, { key: "s", ctrlKey: true });
+    await act(async () => {}); // flush any pending save promise
+    expect(mocks.fsWrite).not.toHaveBeenCalled();
   });
 
   it("editing sets the dirty dot + store flag; save writes and clears", async () => {
