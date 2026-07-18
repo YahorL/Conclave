@@ -8,7 +8,7 @@ export type Block =
   | { kind: "para"; segments: InlineSeg[] }
   | { kind: "codeblock"; lines: string[] };
 
-const FILE_RE = /(?:[\w.-]+\/)+[\w.-]+\.[a-zA-Z]{1,8}(?::\d+)?/;
+const FILE_RE = /\/?(?:[\w.-]+\/)+[\w.-]+\.[a-zA-Z]{1,8}(?::\d+)?/;
 const MENTION_RE = /@([\w-]+)/;
 const CODE_RE = /`([^`]+)`/;
 

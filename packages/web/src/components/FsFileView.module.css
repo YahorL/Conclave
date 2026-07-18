@@ -4,3 +4,34 @@
 .machine { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); }
 .body { flex: 1; overflow: auto; margin: 0; padding: 20px 26px; background: var(--code-bg);
   font-family: var(--font-mono); font-size: 11.5px; color: var(--text-code); white-space: pre-wrap; }
+.editor {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--code-bg);
+}
+.dirty {
+  color: var(--warn);
+  font-size: 10px;
+}
+.notice {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-secondary);
+}
+.save {
+  background: none;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 1px 10px;
+  cursor: pointer;
+}
+.save:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+.save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

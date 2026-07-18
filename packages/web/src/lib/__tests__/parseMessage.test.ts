@@ -16,6 +16,12 @@ describe("parseMessageBody", () => {
     expect(segs.some((s) => s.kind === "file" && s.path === "payments/idem.ts:41")).toBe(true);
   });
 
+  it("preserves the leading slash of absolute file paths", () => {
+    const blocks = parseMessageBody("see /abs/dir/a.ts:41 for the fix", []);
+    const segs = blocks[0].kind === "para" ? blocks[0].segments : [];
+    expect(segs.some((s) => s.kind === "file" && s.path === "/abs/dir/a.ts:41")).toBe(true);
+  });
+
   it("splits fenced code blocks into their own block with lines", () => {
     const body = "before\n```\nline1\nline2\n```\nafter";
     const blocks = parseMessageBody(body, []);
