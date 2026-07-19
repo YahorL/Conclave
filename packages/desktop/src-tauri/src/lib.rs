@@ -13,7 +13,7 @@ static LAUNCHER_URL: Mutex<Option<String>> = Mutex::new(None);
 pub fn run() {
     use tauri::{
         menu::{Menu, MenuItem},
-        tray::{TrayIconBuilder, TrayIconEvent},
+        tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
         Manager, WindowEvent,
     };
 
@@ -67,7 +67,15 @@ pub fn run() {
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click { .. } = event {
+                    // Only a left-button release raises the window: a right-click
+                    // opens the menu without raising, and the press/release pair
+                    // no longer fires the action twice.
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
                         if let Some(win) = tray.app_handle().get_webview_window("main") {
                             let _ = win.show();
                             let _ = win.set_focus();

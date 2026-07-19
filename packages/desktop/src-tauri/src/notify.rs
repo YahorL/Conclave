@@ -62,18 +62,22 @@ pub fn restart<R: Runtime>(app: &AppHandle<R>, hub_url: &str) {
 async fn run_loop<R: Runtime>(app: AppHandle<R>, hub_url: String) {
     let mut backoff = 1u64;
     loop {
-        match connect_once(&app, &hub_url).await {
-            Ok(()) => backoff = 1,
-            Err(e) => {
-                eprintln!("conclave notify: {e}");
-            }
+        // connect_once resets `backoff` to 1 the moment a connection is
+        // established, so a healthy link that later drops via a read error
+        // still reconnects fast. Only a hub that stays unreachable keeps backing off.
+        if let Err(e) = connect_once(&app, &hub_url, &mut backoff).await {
+            eprintln!("conclave notify: {e}");
         }
         tokio::time::sleep(std::time::Duration::from_secs(backoff)).await;
         backoff = (backoff * 2).min(30);
     }
 }
 
-async fn connect_once<R: Runtime>(app: &AppHandle<R>, hub_url: &str) -> Result<(), String> {
+async fn connect_once<R: Runtime>(
+    app: &AppHandle<R>,
+    hub_url: &str,
+    backoff: &mut u64,
+) -> Result<(), String> {
     use futures_util::StreamExt;
 
     let html = reqwest::get(format!("{hub_url}/"))
@@ -99,6 +103,10 @@ async fn connect_once<R: Runtime>(app: &AppHandle<R>, hub_url: &str) -> Result<(
         .await
         .map_err(|e| e.to_string())?;
 
+    // Connection established: reset backoff so a subsequent read-error drop
+    // reconnects immediately rather than inheriting a grown delay.
+    *backoff = 1;
+
     while let Some(msg) = stream.next().await {
         let msg = msg.map_err(|e| e.to_string())?;
         if let tokio_tungstenite::tungstenite::Message::Text(text) = msg {
@@ -111,6 +119,10 @@ async fn connect_once<R: Runtime>(app: &AppHandle<R>, hub_url: &str) -> Result<(
 }
 
 fn show_notification<R: Runtime>(app: &AppHandle<R>, payload: &NotifyPayload, hub_url: &str) {
+    // NOTE: tauri-plugin-notification 2.3.3's NotificationBuilder exposes no
+    // tag / identifier / replaces setter, so `payload.tag` cannot drive native
+    // coalescing/replacement in this version; it is retained for the frame
+    // contract and future plugin support.
     let _ = app
         .notification()
         .builder()

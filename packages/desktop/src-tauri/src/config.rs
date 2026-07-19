@@ -6,7 +6,7 @@ pub struct Config {
     pub hub_url: String,
 }
 
-/// Trim, strip a single trailing slash, and require an http(s) scheme.
+/// Trim, strip trailing slashes, and require an http(s) scheme.
 pub fn normalize_url(raw: &str) -> Result<String, String> {
     let t = raw.trim();
     if t.is_empty() {
