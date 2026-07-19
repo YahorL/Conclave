@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conclave — connect</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+        background: #0d0d0d; color: #f5f5f5;
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
+      }
+      .card { width: 340px; }
+      h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+      p { color: #8a8a8a; font-size: 12.5px; margin: 0 0 16px; }
+      label { display: block; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #737373; margin-bottom: 6px; }
+      input {
+        width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px;
+        border: 1px solid #333; background: #050505; color: #f5f5f5; font-size: 13px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+      }
+      button {
+        margin-top: 12px; width: 100%; padding: 10px; border: none; border-radius: 8px;
+        background: #f5f5f5; color: #0a0a0a; font-size: 13px; font-weight: 600; cursor: pointer;
+      }
+      button:disabled { opacity: .5; cursor: default; }
+      .err { margin-top: 10px; color: #f87171; font-size: 12px; min-height: 15px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Connect to your hub</h1>
+      <p>Enter the URL of your Conclave hub.</p>
+      <label for="url">Hub URL</label>
+      <input id="url" type="text" placeholder="http://localhost:8787" autocomplete="off" />
+      <button id="go">Connect</button>
+      <div class="err" id="err"></div>
+    </div>
+    <script>
+      const { invoke } = window.__TAURI__.core;
+      const input = document.getElementById("url");
+      const btn = document.getElementById("go");
+      const err = document.getElementById("err");
+      invoke("get_hub_url").then((u) => { if (u) input.value = u; }).catch(() => {});
+      async function connect() {
+        err.textContent = "";
+        btn.disabled = true;
+        try {
+          await invoke("set_hub_url", { url: input.value });
+        } catch (e) {
+          err.textContent = String(e);
+          btn.disabled = false;
+        }
+      }
+      btn.addEventListener("click", connect);
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
+    </script>
+  </body>
+</html>

@@ -206,3 +206,40 @@ extra setup; add it to the home screen via the existing PWA manifest. Notes:
 Manual smoke on a real phone/browser (four tabs, chat/terminal/editor flows,
 rotation across 768px, safe areas, Teal) has NOT been run — no browser in the
 build sandbox.
+
+## Desktop app (Tauri)
+
+A native desktop shell (`packages/desktop`) wraps the same web app in a window and
+adds a tray icon and native notifications.
+
+**Build prerequisites (Linux):** Rust toolchain, `webkit2gtk-4.1`, `gtk3`,
+`libsoup-3.0`. Build the binary with `cargo build --release` in
+`packages/desktop/src-tauri` (bundling into `.deb`/AppImage uses the Tauri CLI:
+`cargo install tauri-cli` then `cargo tauri build`).
+
+**First run:** the app opens a launcher asking for your hub URL
+(e.g. `http://localhost:8787` or your tailscale URL). It validates the URL against
+`<url>/health`, saves it to the platform config dir, and loads the hub. Change it
+later from the tray menu → "Change hub URL…".
+
+**Tray & window:** closing the window hides it to the tray (the app keeps running
+and notifications keep arriving); the tray icon click or menu "Show / Hide" toggles
+it; "Quit" exits fully.
+
+**Notifications:** the shell opens its own WebSocket to the hub and raises a native
+notification for the same events as web push (approvals, task failures, thread
+settled, agent blocked). No service worker is involved, so this works inside the
+desktop webview where web push does not. Notifications require the hub to be
+reachable. On Linux the deep-link navigates the window to the relevant thread when
+the notification fires (per-notification click callbacks are not reliably delivered
+by the Linux notification backend).
+
+**Security:** the hub page runs with no Tauri APIs exposed; the shell holds the hub
+token in memory (re-fetched from the served page each start), never on disk — the
+same single-token trust model as the browser client.
+
+**Manual smoke (NOT RUN in the build sandbox — no display):** launch the app, enter
+a hub URL, verify the web app loads; close the window and confirm it hides to tray;
+trigger an approval/task-failure and confirm a native notification appears and its
+click/show navigates to the thread; "Change hub URL…" returns to the launcher; Quit
+exits.

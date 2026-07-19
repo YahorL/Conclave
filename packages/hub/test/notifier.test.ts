@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentStatus, Approval, Task, Thread } from "@conclave/shared";
 import { openDb } from "../src/db.js";
 import { PushStore } from "../src/push-store.js";
@@ -159,5 +159,48 @@ describe("Notifier", () => {
     mailboxEvents.emit("approval", approval());
     await notifier.idle();
     expect(sent).toEqual([]);
+  });
+});
+
+describe("Notifier broadcast", () => {
+  it("broadcasts a notify payload even with zero push subscriptions", async () => {
+    const mailboxEvents = new EventEmitter();
+    const broadcast = vi.fn<(payload: NotifyPayload) => void>();
+    const send = vi.fn().mockResolvedValue(undefined);
+    const notifier = new Notifier({
+      mailboxEvents,
+      store: { list: () => [], remove: () => {} } as never,
+      send,
+      broadcast,
+    });
+    notifier.start();
+    mailboxEvents.emit("approval", approval());
+    await notifier.idle();
+    expect(broadcast).toHaveBeenCalledTimes(1);
+    expect(broadcast.mock.calls[0]![0]).toMatchObject({
+      title: expect.any(String),
+      url: expect.any(String),
+    });
+    expect(send).not.toHaveBeenCalled(); // no subscriptions
+    notifier.stop();
+  });
+
+  it("broadcasts AND push-sends when a subscription exists", async () => {
+    const mailboxEvents = new EventEmitter();
+    const broadcast = vi.fn<(payload: NotifyPayload) => void>();
+    const send = vi.fn().mockResolvedValue(undefined);
+    const sub = { endpoint: "https://push.example/x", keys: { p256dh: "a", auth: "b" } };
+    const notifier = new Notifier({
+      mailboxEvents,
+      store: { list: () => [sub], remove: () => {} } as never,
+      send,
+      broadcast,
+    });
+    notifier.start();
+    mailboxEvents.emit("approval", approval());
+    await notifier.idle();
+    expect(broadcast).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledTimes(1);
+    notifier.stop();
   });
 });

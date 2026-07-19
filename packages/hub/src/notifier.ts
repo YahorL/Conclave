@@ -66,6 +66,7 @@ interface NotifierDeps {
   statusEvents?: EventEmitter;
   store: PushStore;
   send: SendFn;
+  broadcast?: (payload: NotifyPayload) => void;
 }
 
 export class Notifier {
@@ -101,6 +102,7 @@ export class Notifier {
 
   private fanOut(payload: NotifyPayload | null): void {
     if (!payload) return;
+    this.deps.broadcast?.(payload);
     // allSettled: one dead endpoint must not block delivery to the others.
     const work = Promise.allSettled(
       this.deps.store.list().map((sub) => this.trySend(sub, payload)),
