@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "launcher",
+  "description": "Grants the bundled local launcher page (window 'main', local origin only) permission to invoke the two hub-url commands. No `remote` allowlist is declared, so once the window navigates to the remote hub URL that remote origin is a different origin and Tauri's runtime authority denies it these commands. The remote hub page is also granted no `core:` permissions, so it has zero access to Tauri APIs.",
+  "local": true,
+  "windows": ["main"],
+  "permissions": ["allow-get-hub-url", "allow-set-hub-url"]
+}
