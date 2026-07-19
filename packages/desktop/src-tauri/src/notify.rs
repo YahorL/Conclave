@@ -117,13 +117,16 @@ fn show_notification<R: Runtime>(app: &AppHandle<R>, payload: &NotifyPayload, hu
         .title(&payload.title)
         .body(&payload.body)
         .show();
-    // Deep-link on the next window show is best-effort: store the target so a
-    // click handler (or the user reopening) lands on the right thread. For the
-    // MVP we navigate immediately if a url is present, matching the ?thread= flow.
+    // Deep-link only when the window is hidden: reopening from a notification
+    // should land on the right thread, but navigating a VISIBLE, focused window
+    // would reload the SPA and lose composer text/scroll/thread. Gate only the
+    // navigation — the native notification above is always raised.
     if !payload.url.is_empty() {
         if let Some(win) = app.get_webview_window("main") {
-            if let Ok(u) = url::Url::parse(&format!("{hub_url}{}", payload.url)) {
-                let _ = win.navigate(u);
+            if !win.is_visible().unwrap_or(false) {
+                if let Ok(u) = url::Url::parse(&format!("{hub_url}{}", payload.url)) {
+                    let _ = win.navigate(u);
+                }
             }
         }
     }

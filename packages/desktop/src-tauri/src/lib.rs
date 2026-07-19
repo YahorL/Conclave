@@ -2,6 +2,13 @@ mod commands;
 mod config;
 mod notify;
 
+use std::sync::Mutex;
+
+// The real launcher/bundled-frontend origin, captured at startup. The tray
+// "Change hub URL…" handler reuses this instead of a hardcoded scheme literal,
+// which differs by platform (e.g. Linux `http://tauri.localhost`).
+static LAUNCHER_URL: Mutex<Option<String>> = Mutex::new(None);
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::{
@@ -42,8 +49,16 @@ pub fn run() {
                     }
                     "change" => {
                         if let Some(win) = app.get_webview_window("main") {
-                            // Navigate back to the bundled launcher page.
-                            let _ = win.navigate("tauri://localhost".parse().unwrap());
+                            // Navigate back to the real launcher origin captured at
+                            // startup; fall back to the literal if it wasn't stored.
+                            let stored = LAUNCHER_URL.lock().unwrap().clone();
+                            let target = stored
+                                .as_deref()
+                                .and_then(|s| s.parse::<url::Url>().ok())
+                                .or_else(|| "tauri://localhost".parse::<url::Url>().ok());
+                            if let Some(u) = target {
+                                let _ = win.navigate(u);
+                            }
                             let _ = win.show();
                             let _ = win.set_focus();
                         }
@@ -60,6 +75,14 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // Capture the real launcher origin BEFORE any config-based navigation,
+            // so the tray "change" handler can return here regardless of platform.
+            if let Some(win) = app.get_webview_window("main") {
+                if let Ok(u) = win.url() {
+                    *LAUNCHER_URL.lock().unwrap() = Some(u.to_string());
+                }
+            }
 
             // Load persisted hub URL and route the window.
             let path = app
