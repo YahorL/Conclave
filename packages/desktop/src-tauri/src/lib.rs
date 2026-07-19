@@ -1,11 +1,6 @@
 mod commands;
 mod config;
-
-pub mod notify {
-    use tauri::{AppHandle, Runtime};
-    // Placeholder replaced in Task 4.
-    pub fn restart<R: Runtime>(_app: &AppHandle<R>, _hub_url: &str) {}
-}
+mod notify;
 
 use tauri::Manager;
 
