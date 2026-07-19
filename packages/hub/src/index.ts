@@ -5,7 +5,7 @@ export {
   ThreadClosedError,
   ThreadNotFoundError,
 } from "./mailbox.js";
-export { buildServer, type ServerOptions } from "./server.js";
+export { buildServer, type ServerOptions, type HubApp } from "./server.js";
 export { loadRegistry } from "./registry.js";
 export { listUsage, recordUsage, type UsageRow } from "./usage.js";
 export { DebateStore, type DebateRecord } from "./debates.js";

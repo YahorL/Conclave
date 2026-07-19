@@ -81,13 +81,22 @@ export async function buildServer(opts: ServerOptions): Promise<HubApp> {
   const pending = new PendingRequests();
   const terminals = new TerminalRegistry();
   const wsSockets = new Set<{ send(data: string): void }>();
+  const broadcastRaw = (raw: string): void => {
+    for (const s of wsSockets) {
+      try {
+        s.send(raw);
+      } catch (e) {
+        console.error("ws broadcast send failed:", e instanceof Error ? e.message : e);
+      }
+    }
+  };
   const broadcastTerminalList = (): void => {
     const payload = JSON.stringify({ type: "terminal-list", terminals: terminals.list() });
-    for (const s of wsSockets) s.send(payload);
+    broadcastRaw(payload);
   };
   const broadcastNotify = (payload: NotifyPayload): void => {
     const raw = JSON.stringify({ type: "notify", payload });
-    for (const s of wsSockets) s.send(raw);
+    broadcastRaw(raw);
   };
   const limitsByAgent = (): Record<string, import("@conclave/shared").AgentLimits> =>
     Object.fromEntries((opts.registry?.agents ?? []).map((a) => [a.id, a.limits ?? {}]));
@@ -202,7 +211,7 @@ export async function buildServer(opts: ServerOptions): Promise<HubApp> {
       type: "usage",
       summary: getUsageSummary(opts.db, opts.budgetUsd ?? 25, limitsByAgent()),
     });
-    for (const s of wsSockets) s.send(payload);
+    broadcastRaw(payload);
     return reply.code(201).send({ ok: true });
   });
 
@@ -537,7 +546,7 @@ export async function buildServer(opts: ServerOptions): Promise<HubApp> {
           } else if ((t.type === "term-data" || t.type === "term-exit") && t.terminalId) {
             for (const c of terminals.attached(t.terminalId)) c.send(raw2);
           } else if (t.type === "term-error") {
-            for (const s of wsSockets) s.send(raw2);
+            broadcastRaw(raw2);
           }
         } else {
           // client-origin frames
